@@ -1,0 +1,32 @@
+---
+title: "Summary Report"
+author: "Author"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(MATSS)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(drake)
+```
+
+## Read in the results
+
+
+```{r}
+all_agg = readd(all_agg)
+```
+
+## Plot
+
+```{r plot, fig.dim = c(200, 200)}
+ggplot(all_agg, aes(x = year, y = totalabund)) +
+  geom_point() +
+  geom_smooth(method="lm", se=FALSE) +  facet_wrap(vars(route, region), scales = "free") +
+  theme_bw() 
+```
