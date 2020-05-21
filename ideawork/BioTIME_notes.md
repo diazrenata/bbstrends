@@ -10,9 +10,9 @@ __Community-level regulation of temporal trends in biodiversity – 2017__
 
 ADF tests for regulation v. random walk; interpreting based on p-value and z score. Find most communities score as statistically significantly stationary. “Regulation: constant mean and variance in N or S with autocorrelation that decays quickly to 0. The null is an unconstrained random walk leading to nonconstant variance.”
 
-__Stationarity does not mean static__. It means it returns to the trajectory following perturbation, instead of random walking. Trend stationary timeseries can still be moving. __Are these tests for trend stationarity, or no trend?__
+__Stationarity does not mean static__. It means it returns to the trajectory following perturbation, instead of random walking. Trend stationary timeseries can still be moving. They provide a table in the supplement that has qualitatively similar results for ADFs with trends vs. just means, but no description of what the trends are like (magnitude). 
 
-No specific methods re: standardizing values or code for ADF tests. 
+~No specific methods re: standardizing values or code for ADF tests.~ Check supplement?
 
 Some interesting logic in the supplement: 
 
