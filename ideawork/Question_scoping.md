@@ -12,3 +12,16 @@ __Population vs assemblage__
 
 __Trade-offs between currencies__
 
+
+## Assemblage-level trends
+
+For any given currency, I see 2 questions:
+- Random walk vs regulated
+- Trending vs no slope
+
+## Population vs assemblage
+
+- Tallying population slopes fails to account for relative abudnances. If rare species are stable but abundant species decline, the overwhelming signal is decline.
+- The best tally of *slopes* is of population slopes.
+
+## Currency tradeoffs
