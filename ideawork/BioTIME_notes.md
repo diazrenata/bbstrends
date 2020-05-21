@@ -4,11 +4,13 @@ __Assemblage time series reveal biodiversity change but not systematic loss - 20
 
 “Surprisingly, we did not detect a consistent negative trend in species richness or in any of the other metrics of alpha diversity. The overall slope (estimated by allowing each study to have a different intercept, but constraining all studies to have the same slope) is statistically indistinguishable from zero. However, not all data sets have constant species richness. In a mixed model in which both the slope and the intercept are allowed to vary for each time series, slopes for species richness differ among assemblages, but do not exhibit systematic deviations. The variation cancels out because there are approximately equal numbers of negative and positive slopes, and the distribution of slopes is centered around zero, with the majority of slopes being statistically very close to zero.”
 
-These are slopes of species richness.
+These are slopes of __species richness.__
 
 __Community-level regulation of temporal trends in biodiversity – 2017__
 
 ADF tests for regulation v. random walk; interpreting based on p-value and z score. Find most communities score as statistically significantly stationary. “Regulation: constant mean and variance in N or S with autocorrelation that decays quickly to 0. The null is an unconstrained random walk leading to nonconstant variance.”
+
+__Stationarity does not mean static__. It means it returns to the trajectory following perturbation, instead of random walking. Trend stationary timeseries can still be moving. __Are these tests for trend stationarity, or no trend?__
 
 No specific methods re: standardizing values or code for ADF tests. 
 
