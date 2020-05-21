@@ -12,7 +12,9 @@ ADF tests for regulation v. random walk; interpreting based on p-value and z sco
 
 __Stationarity does not mean static__. It means it returns to the trajectory following perturbation, instead of random walking. Trend stationary timeseries can still be moving. They provide a table in the supplement that has qualitatively similar results for ADFs with trends vs. just means, but no description of what the trends are like (magnitude). 
 
-~No specific methods re: standardizing values or code for ADF tests.~ Check supplement?
+ADF text in supplement: 
+
+"Number of significant (P < 0.05 and non-significant (NS) test results for assemblage-level regulation of species Richness or abundance. The ADF0 test assumes no deterministic trends in the data, whereas the ADF1 test accounts for linear trends. Tests are repeated with the Benjamini and Hochberg (53)adjustment for the False Discovery Rate (FDR). Counts of species and total abundance were untransformed" 
 
 Some interesting logic in the supplement: 
 
