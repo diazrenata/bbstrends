@@ -18,6 +18,11 @@ __Trade-offs between currencies__
 For any given currency, I see 2 questions:
 - Random walk vs regulated
 - Trending vs no slope
+- Maybe these fit into a 2x2 table? 
+    - Nonzero slope + not stationary
+    - Nonzero slope + regulated
+    - Zero slope + not regulated
+    - Zero slope + regulated
 
 ## Population vs assemblage
 
