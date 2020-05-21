@@ -1,6 +1,0 @@
----
-title: "Summary Report"
-author: "Author"
-date: "`r Sys.Date()`"
-output: github_document
----
