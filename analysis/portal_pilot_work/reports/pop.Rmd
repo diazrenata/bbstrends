@@ -97,3 +97,42 @@ ggplot(all_trends, aes(x = p)) +
   geom_vline(xintercept = .05)
 
 ```
+
+
+Weight by population size:
+
+
+```{r pop weighting}
+
+weightedrats <- annualrats %>%
+  group_by(treatment, species) %>%
+  summarize(spabund = sum(abundance),
+            spenergy = sum(energy)) %>%
+  ungroup() %>%
+  group_by(treatment) %>%
+  mutate(trtabund = sum(spabund),
+         trtenergy = sum(spenergy)) %>%
+  ungroup() %>%
+  group_by_all() %>%
+  mutate(relabund = spabund/trtabund,
+         relenergy = spenergy/trtenergy) %>%
+    ungroup()
+
+
+all_trends <- left_join(all_trends, weightedrats)
+
+ggplot(filter(all_trends, currency == "abundance"), aes(x = slope, weight = relabund)) +
+  geom_histogram() +
+  theme_bw()
+
+
+ggplot(filter(all_trends, currency == "energy"), aes(x = slope, weight = relenergy)) +
+  geom_histogram() +
+  theme_bw()
+
+ggplot(all_trends, aes(x = p)) +
+  geom_histogram() +
+  facet_wrap(vars(currency)) + 
+  theme_bw() +
+  geom_vline(xintercept = .05)
+```
