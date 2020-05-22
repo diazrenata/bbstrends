@@ -33,3 +33,10 @@ __A balance of winners and losers in the Anthropocene__
 For populations
 
 “With the data on which to calculate a trend line identified for each population, we first applied a square-root transformation to the population data. This transformation stabilizes the variance and is appropriate for models in which population size is determined by some kind of Poisson process. This transformation accommodates 0 s and avoids the distortions that arise from a ln(x + 1) transformation (McArdle & Anderson 2001). Next, we used the ‘scale‘ function in R to rescale each data set so that it had a mean of 0 and a standard deviation of 1. This transformation put all time series into common units that are more appropriate for comparisons of taxa with disparate body sizes, such as vertebrates and plankton. Finally, we fit an ordinary least squares regression line through the transformed data and calculated the slope and its statistical significance (one-tailed test). Note that Pvalues calculated in this way are identical to P-values that would be obtained before the scaling transformation.”
+
+
+__Some overall commentary on the BioTIME work__
+
+I find it puzzling that they have not put out an analysis of *trends* in total abundance? This would seem a logical thing to ask about, especially since they have published on *population level trends* and *regulation in total abundance*.
+
+
