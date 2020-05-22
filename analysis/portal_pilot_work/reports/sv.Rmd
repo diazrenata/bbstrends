@@ -1,0 +1,88 @@
+---
+title: "State variable level"
+author: "Renata Diaz"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(MATSS)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(drake)
+```
+
+```{r portal rodents ts}
+
+annualrats = read.csv(here::here("analysis", "portal_pilot_work", "data", "portal_rats_sv.csv"), stringsAsFactors = F)
+
+ggplot(annualrats, aes(x = year, y = total_abund, group = treatment, color = treatment)) +
+  geom_line() +
+  geom_smooth(method = "lm", se = F) +
+  facet_wrap(vars(treatment), scales = "free_y") +
+  theme_bw() +
+  ggtitle("Total abundance")
+
+
+ggplot(annualrats, aes(x = year, y = total_energy, group = treatment, color = treatment)) +
+  geom_line() +
+  geom_smooth(method = "lm", se = F) +
+  facet_wrap(vars(treatment), scales = "free_y") +
+  theme_bw() +
+  ggtitle("Total energy")
+
+
+```
+
+
+BioTIME analyses:
+
+- Regulation vs. random walk
+- Trends: significance and slope
+
+
+## Trends: Significance and slope
+
+
+```{r a single trend}
+
+one_lm <- lm(filter(annualrats, treatment == "control"), formula = total_abund ~ year)
+
+
+abund_ts <- lapply(unique(annualrats$treatment), FUN = pull_ts, some_ts = annualrats, currency = "total_abund")
+
+abund_trends <- lapply(abund_ts, FUN = bt_trend)
+
+abund_trends <- bind_rows(abund_trends) %>%
+  mutate(treatment = unique(annualrats$treatment),
+         currency = "abundance")
+
+
+
+energy_ts <- lapply(unique(annualrats$treatment), FUN = pull_ts, some_ts = annualrats, currency = "total_energy")
+
+energy_trends <- lapply(energy_ts, FUN = bt_trend)
+
+energy_trends <- bind_rows(energy_trends) %>%
+  mutate(treatment = unique(annualrats$treatment),
+         currency = "energy")
+
+all_trends <- bind_rows(abund_trends, energy_trends)
+
+ggplot(all_trends, aes(x = slope)) +
+  geom_histogram() +
+  facet_wrap(vars(currency)) + 
+  theme_bw()
+
+
+
+ggplot(all_trends, aes(x = p)) +
+  geom_histogram() +
+  facet_wrap(vars(currency)) + 
+  theme_bw() +
+  geom_vline(xintercept = .05)
+
+```

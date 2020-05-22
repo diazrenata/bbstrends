@@ -1,0 +1,99 @@
+---
+title: "Population level"
+author: "Renata Diaz"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(MATSS)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(drake)
+
+source(here::here("analysis", "portal_pilot_work", "scripts", "trends.R"))
+```
+
+```{r portal rodents ts}
+
+annualrats = read.csv(here::here("analysis", "portal_pilot_work", "data", "portal_rats_pop.csv"), stringsAsFactors = F) %>%
+  filter(species != "NA")
+```
+
+
+BioTIME analyses:
+
+- Regulation vs. random walk
+- Trends: significance and slope
+
+
+## Trends: Significance and slope
+
+
+```{r a single trend}
+
+abund_trends <- list()
+
+for(i in 1:length(unique(annualrats$treatment))) {
+  
+  this_ts <- filter(annualrats, treatment == unique(annualrats$treatment)[i]) 
+  
+  ts_s <- lapply(unique(this_ts$species), FUN = pull_pop_ts, some_ts = this_ts, currency = "abundance")
+  
+  ts_trends <- lapply(ts_s, FUN = bt_trend)
+  
+  names(ts_trends) <- unique(this_ts$species)
+  
+  ts_trends <- bind_rows(ts_trends[which(!is.na(ts_trends))], .id = "species")  %>%
+    mutate(treatment = unique(annualrats$treatment)[i])
+ 
+  abund_trends[[i]] <- ts_trends
+   
+}
+
+abund_trends <-  bind_rows(abund_trends) %>%
+  mutate(currency = "abundance")
+
+energy_trends <- list()
+
+for(i in 1:length(unique(annualrats$treatment))) {
+  
+  this_ts <- filter(annualrats, treatment == unique(annualrats$treatment)[i]) 
+  
+  ts_s <- lapply(unique(this_ts$species), FUN = pull_pop_ts, some_ts = this_ts, currency = "energy")
+  
+  ts_trends <- lapply(ts_s, FUN = bt_trend)
+  
+  names(ts_trends) <- unique(this_ts$species)
+  
+  ts_trends <- bind_rows(ts_trends[which(!is.na(ts_trends))], .id = "species")  %>%
+    mutate(treatment = unique(annualrats$treatment)[i])
+ 
+  energy_trends[[i]] <- ts_trends
+   
+}
+
+energy_trends <-  bind_rows(energy_trends) %>%
+  mutate(currency = "energy")
+
+
+
+all_trends <- bind_rows(abund_trends, energy_trends)
+
+ggplot(all_trends, aes(x = slope)) +
+  geom_histogram() +
+  facet_wrap(vars(currency)) + 
+  theme_bw() +
+  geom_vline(xintercept = 0)
+
+
+ggplot(all_trends, aes(x = p)) +
+  geom_histogram() +
+  facet_wrap(vars(currency)) + 
+  theme_bw() +
+  geom_vline(xintercept = .05)
+
+```

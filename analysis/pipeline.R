@@ -12,7 +12,7 @@ expose_imports(MATSS)
 #  - these are the default options, which don't include downloaded datasets
 datasets <- build_bbs_datasets_plan()
 
-#datasets <- datasets[1:10,]
+datasets <- datasets[1:10,]
 
 ## a Drake plan that defines the methods
 methods <- drake::drake_plan(
