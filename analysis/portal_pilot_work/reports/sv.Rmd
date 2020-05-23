@@ -13,6 +13,9 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(drake)
+
+
+source(here::here("analysis", "portal_pilot_work", "scripts", "trends.R"))
 ```
 
 ```{r portal rodents ts}
@@ -49,10 +52,7 @@ BioTIME analyses:
 
 ```{r a single trend}
 
-one_lm <- lm(filter(annualrats, treatment == "control"), formula = total_abund ~ year)
-
-
-abund_ts <- lapply(unique(annualrats$treatment), FUN = pull_ts, some_ts = annualrats, currency = "total_abund")
+abund_ts <- lapply(unique(annualrats$treatment), FUN = pull_sv_ts, some_ts = annualrats, currency = "total_abund")
 
 abund_trends <- lapply(abund_ts, FUN = bt_trend)
 
@@ -62,7 +62,7 @@ abund_trends <- bind_rows(abund_trends) %>%
 
 
 
-energy_ts <- lapply(unique(annualrats$treatment), FUN = pull_ts, some_ts = annualrats, currency = "total_energy")
+energy_ts <- lapply(unique(annualrats$treatment), FUN = pull_sv_ts, some_ts = annualrats, currency = "total_energy")
 
 energy_trends <- lapply(energy_ts, FUN = bt_trend)
 
@@ -72,17 +72,22 @@ energy_trends <- bind_rows(energy_trends) %>%
 
 all_trends <- bind_rows(abund_trends, energy_trends)
 
-ggplot(all_trends, aes(x = slope)) +
-  geom_histogram() +
-  facet_wrap(vars(currency)) + 
-  theme_bw()
 
 
-
-ggplot(all_trends, aes(x = p)) +
-  geom_histogram() +
+ggplot(all_trends, aes(x = slope, y = p, color = treatment, size = r2)) +
+  geom_point(alpha = .5) + 
+  geom_hline(yintercept = .05) +
+  geom_vline(xintercept = 0) +
   facet_wrap(vars(currency)) + 
   theme_bw() +
-  geom_vline(xintercept = .05)
+  xlim(-.1, .1)
+
 
 ```
+
+
+## Gleanings
+
+- All slopes for abundance are significant to .05 and positive; only 2 are significant for energy. 
+- For abundance, all communities have slopes that are positive (but not huge - around .05) and significant. 
+- For energy, control has a near-0 slope and not significant, terrible r2. Spectabs has positive slope but not significant. Exclosure and removal have positive slopes, significant.

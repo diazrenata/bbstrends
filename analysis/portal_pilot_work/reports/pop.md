@@ -1,7 +1,7 @@
 Population level
 ================
 Renata Diaz
-2020-05-22
+2020-05-23
 
 BioTIME analyses:
 
@@ -16,7 +16,7 @@ BioTIME analyses:
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](pop_files/figure-gfm/a%20single%20trend-2.png)<!-- -->
+![](pop_files/figure-gfm/a%20single%20trend-2.png)<!-- -->![](pop_files/figure-gfm/a%20single%20trend-3.png)<!-- -->
 
 Weight by population size:
 
@@ -32,4 +32,4 @@ Weight by population size:
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](pop_files/figure-gfm/pop%20weighting-3.png)<!-- -->
+![](pop_files/figure-gfm/pop%20weighting-3.png)<!-- -->![](pop_files/figure-gfm/pop%20weighting-4.png)<!-- -->

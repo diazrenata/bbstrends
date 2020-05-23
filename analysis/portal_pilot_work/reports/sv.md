@@ -1,7 +1,7 @@
 State variable level
 ================
 Renata Diaz
-2020-05-22
+2020-05-23
 
     ## `geom_smooth()` using formula 'y ~ x'
 
@@ -18,10 +18,14 @@ BioTIME analyses:
 
 ## Trends: Significance and slope
 
-    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
-
 ![](sv_files/figure-gfm/a%20single%20trend-1.png)<!-- -->
 
-    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+## Gleanings
 
-![](sv_files/figure-gfm/a%20single%20trend-2.png)<!-- -->
+  - All slopes for abundance are significant to .05 and positive; only 2
+    are significant for energy.
+  - For abundance, all communities have slopes that are positive (but
+    not huge - around .05) and significant.
+  - For energy, control has a near-0 slope and not significant, terrible
+    r2. Spectabs has positive slope but not significant. Exclosure and
+    removal have positive slopes, significant.
