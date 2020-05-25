@@ -24,6 +24,14 @@ For any given currency, I see 2 questions:
     - Zero slope + not regulated
     - Zero slope + regulated
 
+
+I'm inclined to focus first on the trend *slope*: In particular, do we see consistent *declines* in abundance, energy, or both? 
+
+Headlines from BioTIME studies might lead us to expect no slope for abundance, but those studies do not actually amount to an expectation of no slope. *Species richness* and *populations* have no consistent slopes, but the *relative abundances of populations* as well as *colonizations and extinctions* introduce wiggle room between tallying the slopes of individual populations and the overall trend. I find it curious that they have not published on the overall slope. More generalized concerns about defaunation, declines in population sizes, would point towards an expectation for general declines. 
+
+White et al (2007) 
+
+
 ## Population vs assemblage
 
 - Tallying population slopes fails to account for relative abudnances. If rare species are stable but abundant species decline, the overwhelming signal is decline.
