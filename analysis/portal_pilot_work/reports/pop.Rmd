@@ -103,7 +103,7 @@ ggplot(all_trends, aes(x = slope, y = p, color = treatment, size = r2)) +
   geom_point(alpha = .5) + 
   geom_hline(yintercept = .05) +
   geom_vline(xintercept = 0) +
-  facet_wrap(vars(currency)) + 
+  facet_wrap(vars(currency, treatment)) + 
   theme_bw()
 
 
@@ -154,7 +154,7 @@ ggplot(all_trends, aes(x = slope, y = p, color = treatment, size = relabund)) +
   geom_point(alpha = .5) + 
   geom_hline(yintercept = .05) +
   geom_vline(xintercept = 0) +
-  facet_wrap(vars(currency)) + 
+  facet_wrap(vars(currency, treatment)) + 
   theme_bw()
 
 

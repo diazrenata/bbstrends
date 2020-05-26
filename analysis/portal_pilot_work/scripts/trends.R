@@ -37,6 +37,36 @@ bt_trend <- function(a_ts) {
   return(data.frame(
     slope = ts_slope,
     p = ts_p,
-    r2 = ts_r2
+    r2 = ts_r2,
+    method = "linear"
+  ))
+}
+
+nonlinear_trend <- function(a_ts) {
+
+  if(sum(a_ts$response > 0) < 3) {
+    return(NA)
+  }
+
+  ts_start <- min(which(a_ts$response > 0))
+  ts_stop <- max(which(a_ts$response > 0))
+
+  a_ts <- a_ts[ ts_start:ts_stop, ]
+
+
+  a_ts = a_ts %>%
+    mutate(response = scale(sqrt(response)))
+
+  ts_nls = nls(data = a_ts, formula = response ~ time)
+
+  ts_slope = ts_lm$coefficients[2]
+  ts_p = unlist(anova(ts_lm)[[5]])[1]
+  ts_r2 = summary(ts_lm)$r.squared
+
+  return(data.frame(
+    slope = ts_slope,
+    p = ts_p,
+    r2 = ts_r2,
+    method = "nonlinear"
   ))
 }

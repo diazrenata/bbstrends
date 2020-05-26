@@ -18,8 +18,10 @@ Imports:
     tidyr,
     ggplot2,
     rmarkdown,
-    rlang (>= 0.4.1.9000)
-Remotes:  
+    rlang (>= 0.4.1.9000),
+    magrittr
+Remotes: 
     weecology/MATSS,
     ropensci/drake,
     r-lib/rlang
+RoxygenNote: 7.1.0

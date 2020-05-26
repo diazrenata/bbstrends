@@ -15,18 +15,93 @@ library(ggplot2)
 library(drake)
 ```
 
-## Read in the results
+## Aggregate
 
+```{r read all lin} 
 
-```{r}
-all_agg = readd(all_agg)
+loadd(all_lin)
+
 ```
 
-## Plot
+```{r slope and p hists}
 
-```{r plot, fig.dim = c(200, 200)}
-ggplot(all_agg, aes(x = year, y = totalabund)) +
-  geom_point() +
-  geom_smooth(method="lm", se=FALSE) +  facet_wrap(vars(route, region), scales = "free") +
-  theme_bw() 
+all_lin <- all_lin %>%
+  mutate(signif = p <= .05,
+         win = slope > 0,
+         lose = slope < 0)
+
+ggplot(all_lin, aes(x = slope)) +
+  geom_histogram() + theme_bw() + 
+  geom_density(alpha = 0)
+
+
+ggplot(all_lin, aes(x = slope)) +
+  geom_histogram() + theme_bw() + 
+  facet_wrap(vars(signif))
+
+ggplot(all_lin, aes(x = slope, y = p, size = r2)) +
+  geom_point() + theme_bw() + 
+  geom_hline(yintercept = .05)
 ```
+
+```{r summary table}
+lin_sum <- all_lin %>%
+  group_by(signif) %>%
+  summarize(prop_win = mean(win),
+            prop_lose = mean(lose),
+            n = dplyr::n()) %>%
+  ungroup() %>%
+  mutate(prop_overall = n / sum(n))
+
+print(lin_sum)
+
+```
+
+Run with 100 communities,
+
+* About 50% of slopes are significantly different from zero
+* Of those that are significantly different from zero, 70% are decreasing and 30% increasing. 
+
+## Populations
+
+```{r load pop}
+
+loadd(all_pop_lin)
+
+
+all_pop_lin <- all_pop_lin %>%
+  mutate(signif = p <= .05,
+         win = slope > 0,
+         lose = slope < 0)
+
+ggplot(all_pop_lin, aes(x = slope)) +
+  geom_histogram() + theme_bw() + 
+  geom_density(alpha = 0)
+
+
+ggplot(all_pop_lin, aes(x = slope)) +
+  geom_histogram() + theme_bw() + 
+  facet_wrap(vars(signif), scales = "free_y")
+
+
+ggplot(all_pop_lin, aes(x = slope, y = p, size = r2)) +
+  geom_point() + theme_bw() + 
+  geom_hline(yintercept = .05)
+
+lin_pop_sum <- all_pop_lin %>%
+  group_by(signif) %>%
+  summarize(prop_win = mean(win),
+            prop_lose = mean(lose),
+            n = dplyr::n()) %>%
+  ungroup() %>%
+  mutate(prop_overall = n / sum(n))
+
+print(lin_pop_sum)
+
+
+```
+
+Run with 100 communities,
+
+- 75% of slopes are nonsignificant
+- Of those that are significant, 43% are increasing and 57% are decreasing. 
