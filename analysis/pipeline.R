@@ -36,10 +36,24 @@ new_datasets <- drake::drake_plan(
 
 new_datasets$target <- new_file_names
 
-
 datasets <- dplyr::bind_rows(datasets, new_datasets)
 
-## a Drake plan that defines the methods
+mean_e_setup <- new_datasets %>%
+  dplyr::select(target) %>%
+  dplyr::filter(grepl("energy", target))  %>%
+  dplyr::mutate(abund_dat = substr(target, 8, nchar(target)))
+
+mean_e_datasets <- drake::drake_plan(
+  meane = target(get_mean_e(energy_ts = energy_dat, abund_ts = abund_dat),
+                 transform = map(energy_dat = !!rlang::syms(mean_e_setup$target),
+                                 abund_dat = !!rlang::syms(mean_e_setup$abund_dat),
+                                 .id = abund_dat)
+  )
+)
+
+datasets <- dplyr::bind_rows(datasets, mean_e_datasets)
+
+
 methods <- drake::drake_plan(
   sv = target(get_sv_ts(bbs_dat),
                 transform = map(bbs_dat = !!rlang::syms(datasets$target))),
@@ -48,7 +62,7 @@ methods <- drake::drake_plan(
   all_lin = target(dplyr::bind_rows(lin),
                    transform = combine(lin)),
   pop_lin = target(linear_trend_populations(bbs_dat),
-                   transform = map(bbs_dat = !!rlang::syms(datasets$target))),
+                   transform = map(bbs_dat = !!rlang::syms(datasets$target [ which(!grepl("meane", datasets$target))]))),
   all_pop_lin = target(dplyr::bind_rows(pop_lin),
                        transform = combine(pop_lin))
 )

@@ -38,12 +38,12 @@ ggplot(all_lin, aes(x = slope)) +
 
 ggplot(all_lin, aes(x = slope)) +
   geom_histogram() + theme_bw() + 
-  facet_wrap(vars(currency, signif), scales = "free_y") 
-
-ggplot(all_lin, aes(x = slope, y = p, size = r2)) +
-  geom_point() + theme_bw() + 
-  geom_hline(yintercept = .05) +
-  facet_wrap(vars(currency))
+  facet_wrap(vars(currency, signif), scales = "free_y", ncol = 2) 
+# 
+# ggplot(all_lin, aes(x = slope, y = p, size = r2)) +
+#   geom_point() + theme_bw() + 
+#   geom_hline(yintercept = .05) +
+#   facet_wrap(vars(currency))
 ```
 
 ```{r summary table}
@@ -86,13 +86,13 @@ ggplot(all_pop_lin, aes(x = slope)) +
 
 ggplot(all_pop_lin, aes(x = slope)) +
   geom_histogram() + theme_bw() + 
-  facet_wrap(vars(signif), scales = "free_y")
+  facet_wrap(vars(currency, signif), scales = "free_y", ncol = 2)
 
-
-ggplot(all_pop_lin, aes(x = slope, y = p, size = r2)) +
-  geom_point() + theme_bw() + 
-  geom_hline(yintercept = .05) +
-  facet_wrap(vars(currency), scales = "free_y")
+# 
+# ggplot(all_pop_lin, aes(x = slope, y = p, size = r2)) +
+#   geom_point() + theme_bw() + 
+#   geom_hline(yintercept = .05) +
+#   facet_wrap(vars(currency), scales = "free_y")
 
 lin_pop_sum <- all_pop_lin %>%
   group_by(currency, signif) %>%

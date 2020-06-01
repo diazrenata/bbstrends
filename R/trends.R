@@ -21,9 +21,12 @@ linear_trend <- function(a_ts) {
     return(NA)
   }
 
+ # if(a_ts$currency != "mean_e") {
 
   a_ts = a_ts %>%
     dplyr::mutate(response = scale(sqrt(response)))
+
+ # }
 
   ts_lm = lm(a_ts, formula = response ~ time)
 
@@ -32,6 +35,9 @@ linear_trend <- function(a_ts) {
   ts_r2 = summary(ts_lm)$r.squared
 
   currency <- a_ts$currency[1]
+  region <- a_ts$region[1]
+  route <- a_ts$route[1]
+
 
   return(data.frame(
     slope = ts_slope,
@@ -39,6 +45,8 @@ linear_trend <- function(a_ts) {
     r2 = ts_r2,
     method = "linear",
     currency = currency,
+    route = route,
+    region = region,
     stringsAsFactors = F
   ))
 }

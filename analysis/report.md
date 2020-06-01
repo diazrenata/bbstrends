@@ -29,7 +29,7 @@ ggplot(all_lin, aes(x = slope)) +
 ``` r
 ggplot(all_lin, aes(x = slope)) +
   geom_histogram() + theme_bw() + 
-  facet_wrap(vars(currency, signif), scales = "free_y") 
+  facet_wrap(vars(currency, signif), scales = "free_y", ncol = 2) 
 ```
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
@@ -37,13 +37,12 @@ ggplot(all_lin, aes(x = slope)) +
 ![](report_files/figure-gfm/slope%20and%20p%20hists-2.png)<!-- -->
 
 ``` r
-ggplot(all_lin, aes(x = slope, y = p, size = r2)) +
-  geom_point() + theme_bw() + 
-  geom_hline(yintercept = .05) +
-  facet_wrap(vars(currency))
+# 
+# ggplot(all_lin, aes(x = slope, y = p, size = r2)) +
+#   geom_point() + theme_bw() + 
+#   geom_hline(yintercept = .05) +
+#   facet_wrap(vars(currency))
 ```
-
-![](report_files/figure-gfm/slope%20and%20p%20hists-3.png)<!-- -->
 
 ``` r
 lin_sum <- all_lin %>%
@@ -59,7 +58,7 @@ lin_sum <- all_lin %>%
 print(lin_sum)
 ```
 
-    ## # A tibble: 6 x 6
+    ## # A tibble: 8 x 6
     ##   currency    signif prop_win prop_lose     n prop_overall
     ##   <chr>       <lgl>     <dbl>     <dbl> <int>        <dbl>
     ## 1 energy      FALSE     0.576     0.424    66        0.66 
@@ -68,6 +67,8 @@ print(lin_sum)
     ## 4 individuals TRUE      0.295     0.705    44        0.44 
     ## 5 mass        FALSE     0.549     0.451    71        0.71 
     ## 6 mass        TRUE      0.552     0.448    29        0.290
+    ## 7 mean_e      FALSE     0.5       0.5      56        0.56 
+    ## 8 mean_e      TRUE      0.75      0.25     44        0.44
 
 Run with 100 communities,
 
@@ -99,7 +100,7 @@ ggplot(all_pop_lin, aes(x = slope)) +
 ``` r
 ggplot(all_pop_lin, aes(x = slope)) +
   geom_histogram() + theme_bw() + 
-  facet_wrap(vars(signif), scales = "free_y")
+  facet_wrap(vars(currency, signif), scales = "free_y", ncol = 2)
 ```
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
@@ -107,15 +108,12 @@ ggplot(all_pop_lin, aes(x = slope)) +
 ![](report_files/figure-gfm/load%20pop-2.png)<!-- -->
 
 ``` r
-ggplot(all_pop_lin, aes(x = slope, y = p, size = r2)) +
-  geom_point() + theme_bw() + 
-  geom_hline(yintercept = .05) +
-  facet_wrap(vars(currency), scales = "free_y")
-```
+# 
+# ggplot(all_pop_lin, aes(x = slope, y = p, size = r2)) +
+#   geom_point() + theme_bw() + 
+#   geom_hline(yintercept = .05) +
+#   facet_wrap(vars(currency), scales = "free_y")
 
-![](report_files/figure-gfm/load%20pop-3.png)<!-- -->
-
-``` r
 lin_pop_sum <- all_pop_lin %>%
   group_by(currency, signif) %>%
   summarize(prop_win = mean(win),

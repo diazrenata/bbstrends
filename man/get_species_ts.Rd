@@ -4,7 +4,7 @@
 \alias{get_species_ts}
 \title{Get a species level TS}
 \usage{
-get_species_ts(abund_table, species_index, currency)
+get_species_ts(abund_table, species_index, currency, route = NA, region = NA)
 }
 \arguments{
 \item{abund_table}{for abundance or energy}
@@ -12,6 +12,10 @@ get_species_ts(abund_table, species_index, currency)
 \item{species_index}{which column}
 
 \item{currency}{individuals, energy, or mass}
+
+\item{route}{route}
+
+\item{region}{region}
 }
 \value{
 dataframe of time and population
