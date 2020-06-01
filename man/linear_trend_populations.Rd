@@ -4,7 +4,7 @@
 \alias{linear_trend_populations}
 \title{Fit linear trend to all populations in a community}
 \usage{
-linear_trend_populations(a_dataset, currency = "individuals")
+linear_trend_populations(a_dataset)
 }
 \arguments{
 \item{a_dataset}{columns for time and response}

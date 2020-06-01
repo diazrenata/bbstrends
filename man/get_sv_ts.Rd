@@ -4,12 +4,10 @@
 \alias{get_sv_ts}
 \title{Get state variable TS}
 \usage{
-get_sv_ts(a_dataset, currency = "individuals")
+get_sv_ts(a_dataset)
 }
 \arguments{
 \item{a_dataset}{a MATSS dataset}
-
-\item{currency}{individuals or energy}
 }
 \value{
 dataframe of time and aggregate variable

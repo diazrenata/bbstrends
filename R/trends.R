@@ -31,11 +31,15 @@ linear_trend <- function(a_ts) {
   ts_p = unlist(anova(ts_lm)[[5]])[1]
   ts_r2 = summary(ts_lm)$r.squared
 
+  currency <- a_ts$currency[1]
+
   return(data.frame(
     slope = ts_slope,
     p = ts_p,
     r2 = ts_r2,
-    method = "linear"
+    method = "linear",
+    currency = currency,
+    stringsAsFactors = F
   ))
 }
 
@@ -49,9 +53,9 @@ linear_trend <- function(a_ts) {
 #' @export
 #'
 #' @importFrom dplyr bind_rows
-linear_trend_populations <- function(a_dataset, currency = "individuals") {
+linear_trend_populations <- function(a_dataset) {
 
-  populations <- get_all_species_ts(a_dataset, currency = currency)
+  populations <- get_all_species_ts(a_dataset)
 
   trends <- lapply(populations, FUN = linear_trend)
 

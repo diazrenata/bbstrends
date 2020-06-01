@@ -4,12 +4,14 @@
 \alias{get_species_ts}
 \title{Get a species level TS}
 \usage{
-get_species_ts(abund_table, species_index)
+get_species_ts(abund_table, species_index, currency)
 }
 \arguments{
 \item{abund_table}{for abundance or energy}
 
 \item{species_index}{which column}
+
+\item{currency}{individuals, energy, or mass}
 }
 \value{
 dataframe of time and population

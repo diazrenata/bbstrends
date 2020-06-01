@@ -4,12 +4,10 @@
 \alias{get_all_species_ts}
 \title{Get species level TSs for a community}
 \usage{
-get_all_species_ts(a_dataset, currency = "individuals")
+get_all_species_ts(a_dataset)
 }
 \arguments{
 \item{a_dataset}{a MATSS dataset}
-
-\item{currency}{individuals or energy}
 }
 \value{
 list of dataframes of time and population
