@@ -1,0 +1,79 @@
+---
+title: "Summary Report"
+author: "Ren"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(MATSS)
+library(dplyr)
+library(ggplot2)
+library(drake)
+```
+
+## Aggregate
+
+```{r read all lin} 
+
+loadd(all_lin)
+
+```
+
+```{r slope and p hists}
+
+all_lin <- all_lin %>%
+  mutate(signif = p <= .05,
+         win = slope > 0,
+         lose = slope < 0)
+
+ggplot(all_lin, aes(x = slope)) +
+  geom_histogram(alpha = .8) + theme_bw() + 
+ # geom_density(alpha = 0) +
+  facet_wrap(vars(currency), scales = "free_y") +
+  geom_vline(xintercept = 0)
+
+
+ggplot(all_lin, aes(x = slope)) +
+  geom_histogram() + theme_bw() + 
+  facet_wrap(vars(currency, signif), scales = "free_y", ncol = 2) 
+
+ggplot(all_lin, aes(x = slope, y = log(p), size = r2)) +
+  geom_point() + theme_bw() +
+  geom_hline(yintercept = log(.05)) +
+  facet_wrap(vars(currency))
+```
+
+```{r summary table}
+lin_sum <- all_lin %>%
+  group_by(currency, signif) %>%
+  summarize(prop_win = mean(win),
+            prop_lose = mean(lose),
+            n = dplyr::n()) %>%
+  ungroup() %>%
+  group_by(currency) %>%
+  mutate(prop_overall = n / sum(n)) %>%
+  ungroup()
+
+print(lin_sum)
+
+```
+
+Run with **500** communities.
+
+#### Individuals
+
+- 50% of slopes are not significant to .05
+- Of those that are, **26% are increasing** and **74% are decreasing**
+
+#### Energy
+
+- 60% not significant
+- Of those that are, 49/52% increasing/decreasing
+
+#### Mass
+
+- 65% not significant
+- Of those that are, 60% increasing and 40% decreasing

@@ -1,7 +1,7 @@
 Summary Report
 ================
 Author
-2020-06-01
+2020-06-03
 
 ## Aggregate
 
@@ -58,7 +58,7 @@ lin_sum <- all_lin %>%
 print(lin_sum)
 ```
 
-    ## # A tibble: 8 x 6
+    ## # A tibble: 6 x 6
     ##   currency    signif prop_win prop_lose     n prop_overall
     ##   <chr>       <lgl>     <dbl>     <dbl> <int>        <dbl>
     ## 1 energy      FALSE     0.576     0.424    66        0.66 
@@ -67,8 +67,6 @@ print(lin_sum)
     ## 4 individuals TRUE      0.295     0.705    44        0.44 
     ## 5 mass        FALSE     0.549     0.451    71        0.71 
     ## 6 mass        TRUE      0.552     0.448    29        0.290
-    ## 7 mean_e      FALSE     0.5       0.5      56        0.56 
-    ## 8 mean_e      TRUE      0.75      0.25     44        0.44
 
 Run with 100 communities,
 

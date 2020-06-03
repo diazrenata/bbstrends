@@ -1,3 +1,80 @@
+#' Load a dataset from BBSSize
+#'
+#' @param dataset_name eg "bbs_rtrg_101_4"
+#' @param datasets_dir where they are
+#' @param currency "size" or "energy"
+#'
+#' @return dataset if it exists
+#' @export
+#'
+get_size_dataset <- function(dataset_name, datasets_dir = "C:/Users/diaz.renata/Documents/GitHub/BBSsize/analysis/isd_data", currency) {
+
+
+  dataset_file_name <- paste0(currency, "_", dataset_name, ".Rds")
+
+  dataset_path <- file.path(datasets_dir, dataset_file_name)
+
+  if(file.exists(dataset_path)) {
+    return(readRDS(dataset_path))
+  } else {
+    return()
+  }
+
+}
+
+#' Make a plan to get size datasets
+#'
+#' @param datasets_plan abund plan
+#' @param datasets_dir where the size datasets live
+#'
+#' @return a plan
+#' @export
+#'
+#' @importFrom drake drake_plan
+#' @importFrom dplyr bind_rows
+build_size_datasets_plan <- function(datasets_plan, datasets_dir =  "C:/Users/diaz.renata/Documents/GitHub/BBSsize/analysis/isd_data") {
+
+  dataset_names <- datasets_plan$target
+
+  size_files_exist <- vector(length = length(dataset_names))
+
+  for(i in 1:length(dataset_names)) {
+
+    energy_name <- file.path(datasets_dir, paste0( "energy_", dataset_names[i], ".Rds"))
+    size_name <- file.path(datasets_dir, paste0( "size_", dataset_names[i], ".Rds"))
+
+
+    size_files_exist[i] <- (
+      file.exists(energy_name) && file.exists(size_name)
+    )
+
+  }
+
+  dataset_names <- dataset_names[ which(size_files_exist)]
+
+  new_datasets <- drake::drake_plan(
+    size = target(get_size_dataset(dataset_name,
+                                   datasets_dir = "C:/Users/diaz.renata/Documents/GitHub/BBSsize/analysis/isd_data",
+                                   currency = "size"),
+                  transform = map(
+                    dataset_name =!!dataset_names
+                  )),
+    energy = target(get_size_dataset(dataset_name = dataset_name,
+                                     datasets_dir = "C:/Users/diaz.renata/Documents/GitHub/BBSsize/analysis/isd_data",
+                                     currency = "energy"),
+                    transform = map(
+                      dataset_name = !!dataset_names
+                    ))
+  )
+
+  datasets_plan <- dplyr::bind_rows(
+    datasets_plan[ which(size_files_exist), ],
+    new_datasets
+  )
+
+  return(datasets_plan)
+}
+
 #' Get state variable TS
 #'
 #' @param a_dataset a MATSS dataset
@@ -7,11 +84,11 @@
 #'
 get_sv_ts <- function(a_dataset) {
 
-if(!is.vector(a_dataset$abundance)) {
+  if(!is.vector(a_dataset$abundance)) {
     sv <- rowSums(a_dataset$abundance)
-} else {
-  sv <- a_dataset$abundance
-}
+  } else {
+    sv <- a_dataset$abundance
+  }
   if(!is.character(a_dataset$metadata$currency)) {
     currency <- "individuals"
   } else {
@@ -70,7 +147,7 @@ get_species_ts <- function(abund_table, species_index, currency, route = NA, reg
                     currency = currency,
                     route = route,
                     region = region,
-                  stringsAsFactors = F))
+                    stringsAsFactors = F))
 
 }
 
@@ -94,11 +171,11 @@ get_all_species_ts <- function(a_dataset) {
   route <- a_dataset$metadata$route
   region <- a_dataset$metadata$region
 
-    ts_s <- lapply(1:ncol(a_dataset$abundance), FUN = get_species_ts,
-                   abund_table = a_dataset$abundance,
-                   currency = currency,
-                   route = route,
-                   region = region)
+  ts_s <- lapply(1:ncol(a_dataset$abundance), FUN = get_species_ts,
+                 abund_table = a_dataset$abundance,
+                 currency = currency,
+                 route = route,
+                 region = region)
 
 
   return(ts_s)
