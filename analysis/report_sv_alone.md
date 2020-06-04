@@ -69,6 +69,26 @@ print(lin_sum)
     ## 5 mass        FALSE     0.520     0.480   323        0.646
     ## 6 mass        TRUE      0.593     0.407   177        0.354
 
+``` r
+slope_summ <- all_lin %>%
+  group_by(currency, signif, win, lose) %>%
+  summarize(mean_slope = mean(slope)) %>%
+  ungroup() %>%
+  filter(signif)
+
+print(slope_summ)
+```
+
+    ## # A tibble: 6 x 5
+    ##   currency    signif win   lose  mean_slope
+    ##   <chr>       <lgl>  <lgl> <lgl>      <dbl>
+    ## 1 energy      TRUE   FALSE TRUE     -0.0976
+    ## 2 energy      TRUE   TRUE  FALSE     0.0959
+    ## 3 individuals TRUE   FALSE TRUE     -0.106 
+    ## 4 individuals TRUE   TRUE  FALSE     0.108 
+    ## 5 mass        TRUE   FALSE TRUE     -0.0913
+    ## 6 mass        TRUE   TRUE  FALSE     0.0897
+
 Run with **500** communities.
 
 #### Individuals

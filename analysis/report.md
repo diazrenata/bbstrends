@@ -61,12 +61,12 @@ print(lin_sum)
     ## # A tibble: 6 x 6
     ##   currency    signif prop_win prop_lose     n prop_overall
     ##   <chr>       <lgl>     <dbl>     <dbl> <int>        <dbl>
-    ## 1 energy      FALSE     0.576     0.424    66        0.66 
-    ## 2 energy      TRUE      0.353     0.647    34        0.34 
-    ## 3 individuals FALSE     0.357     0.643    56        0.56 
-    ## 4 individuals TRUE      0.295     0.705    44        0.44 
-    ## 5 mass        FALSE     0.549     0.451    71        0.71 
-    ## 6 mass        TRUE      0.552     0.448    29        0.290
+    ## 1 energy      FALSE     0.492     0.508   299        0.598
+    ## 2 energy      TRUE      0.373     0.627   201        0.402
+    ## 3 individuals FALSE     0.419     0.581   246        0.492
+    ## 4 individuals TRUE      0.260     0.740   254        0.508
+    ## 5 mass        FALSE     0.520     0.480   323        0.646
+    ## 6 mass        TRUE      0.593     0.407   177        0.354
 
 Run with 100 communities,
 
@@ -128,12 +128,12 @@ print(lin_pop_sum)
     ## # A tibble: 6 x 6
     ##   currency    signif prop_win prop_lose     n prop_overall
     ##   <chr>       <lgl>     <dbl>     <dbl> <int>        <dbl>
-    ## 1 energy      FALSE     0.466     0.534  4223        0.756
-    ## 2 energy      TRUE      0.433     0.567  1366        0.244
-    ## 3 individuals FALSE     0.466     0.532  4203        0.754
-    ## 4 individuals TRUE      0.429     0.571  1372        0.246
-    ## 5 mass        FALSE     0.465     0.535  4220        0.755
-    ## 6 mass        TRUE      0.434     0.566  1369        0.245
+    ## 1 energy      FALSE     0.475     0.525 24439        0.711
+    ## 2 energy      TRUE      0.438     0.562  9939        0.289
+    ## 3 individuals FALSE     0.472     0.526 24351        0.710
+    ## 4 individuals TRUE      0.439     0.561  9970        0.290
+    ## 5 mass        FALSE     0.475     0.525 24446        0.711
+    ## 6 mass        TRUE      0.438     0.562  9932        0.289
 
 Run with 100 communities,
 

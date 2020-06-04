@@ -12,7 +12,7 @@ expose_imports(bbstrends)
 #  - these are the default options, which don't include downloaded datasets
 datasets <- build_bbs_datasets_plan()
 
-datasets <- datasets[1:500,]
+datasets <- datasets[1:100,]
 
 datasets <- build_size_datasets_plan(datasets_plan = datasets)
 
@@ -22,12 +22,18 @@ methods <- drake::drake_plan(
                 transform = map(bbs_dat = !!rlang::syms(datasets$target))),
   lin = target(linear_trend(sv),
                transform = map(sv)),
+  scaled_sv = target(scale_sv_ts(sv),
+                      transform = map(sv)),
+  all_sv = target(dplyr::bind_rows(sv),
+                  transform = combine(sv)),
+  all_sv_scaled = target(dplyr::bind_rows(scaled_sv),
+                  transform = combine(scaled_sv)),
   all_lin = target(dplyr::bind_rows(lin),
-                   transform = combine(lin))#,
-  # pop_lin = target(linear_trend_populations(bbs_dat),
-  #                  transform = map(bbs_dat = !!rlang::syms(datasets$target [ which(!grepl("meane", datasets$target))]))),
-  # all_pop_lin = target(dplyr::bind_rows(pop_lin),
-  #                      transform = combine(pop_lin))
+                   transform = combine(lin)),
+  pop_lin = target(linear_trend_populations(bbs_dat),
+                   transform = map(bbs_dat = !!rlang::syms(datasets$target [ which(!grepl("meane", datasets$target))]))),
+  all_pop_lin = target(dplyr::bind_rows(pop_lin),
+                       transform = combine(pop_lin))
 )
 
 ## a Drake plan for the Rmarkdown report

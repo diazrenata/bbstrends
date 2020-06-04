@@ -59,6 +59,13 @@ lin_sum <- all_lin %>%
 
 print(lin_sum)
 
+slope_summ <- all_lin %>%
+  group_by(currency, signif, win, lose) %>%
+  summarize(mean_slope = mean(slope)) %>%
+  ungroup() %>%
+  filter(signif)
+
+print(slope_summ)
 ```
 
 Run with **500** communities.

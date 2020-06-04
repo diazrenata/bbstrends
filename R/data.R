@@ -104,6 +104,23 @@ get_sv_ts <- function(a_dataset) {
 
 }
 
+
+#' Scale state variable TS
+#'
+#' @param a_dataset a svS dataset
+#'
+#' @return dataframe of time and aggregate variable
+#' @export
+#'
+scale_sv_ts <- function(a_dataset) {
+
+ # a_dataset$response <- sqrt(a_dataset$response)
+  a_dataset$response <- scale(a_dataset$response)
+
+  return(a_dataset)
+
+}
+
 #' Get mean E TS
 #'
 #' @param abund_ts abund
