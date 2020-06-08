@@ -1,0 +1,83 @@
+---
+title: "Summary Report"
+author: "Ren"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(MATSS)
+library(dplyr)
+library(ggplot2)
+library(drake)
+```
+
+```{r load a ts}
+
+loadd(sv_bbs_rtrg_1_4)
+
+ggplot(sv_bbs_rtrg_1_4, aes(x = time, y = response)) +
+  geom_line() +
+  theme_bw()
+
+ggplot(sv_bbs_rtrg_1_4, aes(x = response)) +
+  geom_density()
+```
+
+Ok, scaling:
+
+```{r scale}
+sv_bbs_rtrg_1_4 <- sv_bbs_rtrg_1_4 %>%
+  mutate(response = scale(sqrt(response)))
+
+
+ggplot(sv_bbs_rtrg_1_4, aes(x = time, y = response)) +
+  geom_line() +
+  theme_bw()
+
+ggplot(sv_bbs_rtrg_1_4, aes(x = response)) +
+  geom_density()
+
+```
+
+```{r fit a lm}
+
+sv_lm <- lm(sv_bbs_rtrg_1_4, formula = response ~ time)
+
+summary(sv_lm)
+
+plot(sv_lm)
+```
+
+The residuals don't look uniform and are def not normal.
+
+```{r adf}
+
+library(tseries)
+
+sv_adf <- adf.test(sv_bbs_rtrg_1_4$response)
+
+sv_adf
+
+```
+Fails to reject the null, that there is a unit root.
+
+This means OLS isn't applicable.
+
+Try differencing the TS to obtain a stationary TS?
+
+```{r differencing}
+
+sv_diff <- diff(sv_bbs_rtrg_1_4$response, lag = 2)
+
+plot(sv_diff)
+
+```
+
+
+```{r trying a permutation test}
+
+```
+

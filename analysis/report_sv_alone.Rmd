@@ -84,3 +84,18 @@ Run with **500** communities.
 
 - 65% not significant
 - Of those that are, 60% increasing and 40% decreasing
+
+
+```{r p value hists}
+
+
+all_lin <- all_lin %>%
+  mutate(p_val_slope_sign = p * slope / abs(slope))
+
+ggplot(all_lin, aes(x = p_val_slope_sign)) +
+  geom_histogram() +
+  theme_bw() +
+  geom_vline(xintercept = c(-.05, .05)) +
+  facet_wrap(vars(currency), scales = "free_y")
+
+```

@@ -1,0 +1,108 @@
+---
+title: "Summary Report"
+author: "Ren"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(MATSS)
+library(dplyr)
+library(ggplot2)
+library(drake)
+```
+
+```{r load a ts}
+
+loadd(sv_bbs_rtrg_1_4)
+loadd(sv_energy_bbs_rtrg_1_4)
+
+head(sv_energy_bbs_rtrg_1_4)
+
+
+energy <- sv_energy_bbs_rtrg_1_4 %>%
+  rename(energy = response) %>%
+  select(time, energy)
+
+abund <- sv_bbs_rtrg_1_4 %>%
+  rename(abund = response) %>%
+  select(time, abund)
+
+both <- left_join(energy, abund) %>%
+  mutate(mean_e = energy / abund) %>%
+  mutate(energy = scale((energy)),
+         abund = scale((abund)),
+         mean_e = scale(mean_e))
+
+
+ggplot(both, aes(time, abund)) +
+  geom_line() +
+  geom_line(aes(time, energy), color = "blue")
+
+
+ggplot(both, aes(time, mean_e)) +
+  geom_line()
+
+n_lm <- lm(abund ~ time, both)
+summary(n_lm)
+plot(n_lm)
+
+
+e_lm <- lm(energy ~ time, both)
+plot(e_lm)
+summary(e_lm)
+
+mean_e_lm <- lm(mean_e ~ time, both) 
+plot(mean_e_lm)
+summary(mean_e_lm)
+
+```
+
+```{r compare currency slopes}
+
+compare <- both %>%
+  select(time, energy, abund) %>%
+  tidyr::pivot_longer(-time, names_to = "currency")
+
+head(compare)
+
+ggplot(compare, aes(time, value, color =  currency)) +
+  geom_line() +
+  geom_smooth(method = "lm")
+
+c_lm <- lm(value ~ time * currency, compare)
+
+plot(c_lm)
+
+summary(c_lm)
+
+
+```
+
+## Rats
+```{r load rats}
+
+annualrats = read.csv(here::here("analysis", "portal_pilot_work", "data", "portal_rats_sv.csv"), stringsAsFactors = F)
+
+annualrats <- filter(annualrats, treatment == "control") %>%
+  mutate(time = row_number(),
+         energy = scale(total_energy),
+         abund = scale(total_abund)) %>%
+  select(time, energy, abund) %>%
+  tidyr::pivot_longer(-time, names_to = "currency")
+
+head(annualrats)
+
+ggplot(annualrats, aes(time, value, color =  currency)) +
+  geom_line() +
+  geom_smooth(method = "lm")
+
+ar_lm <- lm(value ~ time * currency, annualrats)
+
+plot(ar_lm)
+
+summary(ar_lm)
+
+```
