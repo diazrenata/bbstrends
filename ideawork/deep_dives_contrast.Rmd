@@ -1,0 +1,291 @@
+---
+title: "A deep dive"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(fig.width=4, fig.height=3) 
+library(dplyr)
+library(ggplot2)
+
+community <- "bbs_rtrg_10_4"
+
+ibd_filepath <- paste0("C:\\Users\\diaz.renata\\Documents\\GitHub\\BBSsize\\analysis\\isd_data\\ibd_isd_", community, ".Rds")
+
+ibd <- readRDS(ibd_filepath)
+
+```
+
+Here I have loaded the IBD which includes a size estimate and metabolic rate estimate, and species ID, for every individual at every time point. 
+
+```{r head ibd}
+head(ibd) 
+```
+
+We can use the IBD to compute aggregate metrics per year.
+
+```{r aggregates}
+
+agg <- ibd %>%
+  group_by(year) %>%
+  summarize(totalind = dplyr::n(),
+            nspp = length(unique(id)),
+            totalmass = sum(ind_size),
+            totalenergy = sum(ind_b),
+            meanmass = mean(ind_size),
+            meanenergy = mean(ind_b)) %>%
+  ungroup()
+
+head(agg)
+
+```
+
+Let's plot the aggregate metrics over time.
+
+```{r agg over time, fig.dim = c(4,3)}
+ggplot(agg, aes(year, nspp)) +
+  geom_point(color = "pink") +
+    geom_line(color = "pink") +
+  geom_smooth(method = "lm", se = F, color = "pink") +
+  theme_bw() +
+  ggtitle("Species richness")
+
+
+ggplot(agg, aes(year, totalind)) +
+  geom_point(color = "blue") +
+    geom_line(color = "blue") +
+    geom_smooth(method = "lm", se = F, color = "blue") +
+  theme_bw() +
+  ggtitle("Total individual abundance")
+
+
+ggplot(agg, aes(year, totalmass)) +
+  geom_point(color = "purple") +
+    geom_line(color = "purple") +
+    geom_smooth(method = "lm", se = F, color = "purple") +
+  theme_bw() +
+  ggtitle("Total biomass")
+
+
+ggplot(agg, aes(year, totalenergy)) +
+  geom_point(color = "red") +
+    geom_line(color = "red") +
+    geom_smooth(method = "lm", se = F, color = "red") +
+  theme_bw() +
+  ggtitle("Total energy")
+
+ggplot(agg, aes(totalind, totalenergy, color = totalmass)) +
+  geom_point() +
+  theme_bw() +
+  scale_color_viridis_c()
+
+ggplot(agg, aes(year, meanmass)) +
+  geom_point(color = "purple") +
+    geom_line(color = "purple") +
+    geom_smooth(method = "lm", se = F, color = "purple") +
+  theme_bw() +
+  ggtitle("Mean biomass")
+
+
+ggplot(agg, aes(year, meanenergy)) +
+  geom_point(color = "red") +
+    geom_line(color = "red") +
+    geom_smooth(method = "lm", se = F, color = "red") +
+  theme_bw() +
+  ggtitle("Mean energy")
+```
+
+```{r agg lms}
+
+agg_for_lm <- agg %>%
+  select(year, totalind, totalmass, totalenergy) %>%
+  tidyr::pivot_longer(-year, names_to = "currency") %>%
+  group_by(currency) %>%
+  mutate(value = scale(value)) %>%
+  ungroup()
+
+ggplot(agg_for_lm, aes(x = year, y = value, color = currency)) +
+  geom_point() +
+  geom_line() +
+  theme_bw()
+
+currency_lm <- lm(value ~ year * currency, data = agg_for_lm)
+
+summary(currency_lm)
+
+plot(currency_lm)
+
+```
+
+
+The story I would tell from this is:
+
+- General correspondence between currencies. Overall not a pronounced trend, but quite a spike in all currencies in the late 20teens. No systematic pull in size.
+
+
+
+
+<!-- Let's look at the ISD by year? Will be big!! -->
+
+<!-- ```{r isds, fig.dim = c(20,20)} -->
+
+<!-- ggplot(ibd, aes(x = log(ind_size))) + -->
+<!--   geom_density() + -->
+<!--   theme_bw() + -->
+<!--   facet_wrap(vars(year), scales = "free_y", ncol = 4) -->
+
+<!-- ``` -->
+
+<!-- Just based on intuition, let's contrast this with species histograms by year... -->
+
+<!-- ```{r composition, fig.dim = c(20,20)} -->
+
+<!-- ggplot(ibd, aes(x = id, y = ..count..)) + -->
+<!--   geom_bar() + -->
+<!--   theme_bw() + -->
+<!--   facet_wrap(vars(year), scales = "free_y", ncol = 4) -->
+
+<!-- ``` -->
+
+<!-- So now I would like to see plots of: -->
+
+<!-- * Pairwise ISD overlap (y) against distance in time (x).  -->
+<!-- * Euclidean community distance (y) against distance in time (x). -->
+
+<!-- It looks to me almost like the ISDs could be plausibly unordered: not shifting directionally through time. Such that overlap should generally be high, and there should not be a relationship between how far apart years are and how similar they are. But that we might have seen directional change in species composition, meaning that years farther apart will be less similar than adjacent ones. -->
+
+<!-- This isn't what we get from these plots! Not sure if that's cause I'm wrong, or because these plots aren't sophisticated enough to handle autocorrelation etc. -->
+
+<!-- The one piece of this I think is really interesting (and I have some confidence in) is, that Euclidean distance and overlap appear pretty uncorrelated. I *think* this points to a large degree of functional replacement of species: you can have high overlap with large distance, if species 1 has replaced species 2 but they are the same size. -->
+
+```{r isd overlap pairwise, fig.dim = c(4,3)}
+library(isds)
+
+years_key <- data.frame(year = unique(agg$year),
+                        species = 1:length(unique(agg$year)))
+
+all_pairings <- get_pairs(nrow(years_key))
+
+ibd_for_pairings <- ibd %>%
+  left_join(years_key) %>%
+  rename(wgt = ind_size) 
+
+all_species_pairs <- apply(all_pairings, MARGIN = 1, FUN = get_species_pairs, community_df = ibd_for_pairings)
+
+all_pair_overlaps <- lapply(all_species_pairs, FUN = isds:::pair_overlap, min_size = 0, max_size = max(ibd_for_pairings$wgt) * 1.5, npoints = 1024)
+
+all_pairings$overlap <- unlist(all_pair_overlaps)
+
+all_pairings$distance <- NA
+
+
+community_matrix <- ibd %>%
+  group_by(year, id) %>%
+  summarize(abund = (dplyr::n())) %>%
+  ungroup() %>%
+  tidyr::pivot_wider(names_from = id, values_from = abund, values_fill = 0) %>%
+  select(-year)
+
+community_matrix <- as.matrix(community_matrix)
+
+for(i in 1:nrow(all_pairings)) {
+  
+  this_pair <- community_matrix[ c(all_pairings$sp1[i], all_pairings$sp2[i]),]
+  
+  all_pairings$distance[i] <- dist(this_pair)[[1]]
+
+}
+
+ibd_overlap <- all_pairings %>%
+  rename(species = sp1) %>%
+  left_join(years_key) %>%
+  rename(year1 = year,
+         sp1 = species) %>%
+  rename(species = sp2) %>%
+  left_join(years_key) %>%
+  rename(year2 = year, 
+         sp2 = species)
+
+
+ibd_overlap <- ibd_overlap %>%
+  mutate(year_distance = abs(year1 - year2))
+```
+
+
+```{r overlap v eucl}
+ggplot(ibd_overlap, aes(distance, overlap)) +
+  geom_point() +
+  theme_bw()
+```
+
+Similarity in species composition doesn't appear to predict ISD overlap.
+
+
+### Scrap
+```{r year dist v overlap}
+ggplot(ibd_overlap, aes(year_distance, overlap)) + 
+  geom_point() +
+  theme_bw() +
+  geom_smooth(method = "lm", se = F)
+
+```
+
+
+```{r distance v eucl}
+
+ggplot(ibd_overlap, aes(year_distance, distance)) +
+  geom_point() +
+  theme_bw() +
+  geom_smooth(method = "lm", se = F)
+
+```
+
+
+```{r since 1972 overlap}
+ggplot(filter(ibd_overlap, year1 == min(ibd_overlap$year1)), aes(year_distance, overlap)) + 
+  geom_point() +
+  theme_bw() +
+  geom_smooth(method = "lm", se = F) +
+  ggtitle("Time since start")
+```
+
+**Hugely noisy** and not an obvious decrease in overlap over time.
+
+```{r eucl since 1972}
+ggplot(filter(ibd_overlap, year1 ==  min(ibd_overlap$year1)), aes(year_distance, distance)) +
+  geom_point() +
+  theme_bw() +
+  geom_smooth(method = "lm", se = F)+
+  ggtitle("Time since start")
+```
+
+Somewhat clearer increase in distance in composition, but still super noisy.
+
+```{r consecutive overlap}
+consecutive_years <- years_key %>%
+  select(-species) %>%
+  rename(year1 = year)
+
+consecutive_years$year2 <- c(consecutive_years$year[2:length(consecutive_years$year)], NA)
+
+
+consecutive <- ibd_overlap %>%
+  right_join(consecutive_years)
+  
+ggplot(consecutive, aes(x = year1, y = overlap)) +
+  geom_point()  +
+  theme_bw() +
+  geom_smooth(method = "lm", se = F)
+```
+
+
+```{r consecutive eucl}
+ggplot(consecutive, aes(x = year1, y = distance)) +
+  geom_point()  +
+  theme_bw() +
+  geom_smooth(method = "lm", se = F)
+
+```
+
+I don't see an obvious change in how similar consecutive samples are over time.
