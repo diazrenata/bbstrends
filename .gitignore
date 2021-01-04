@@ -2,3 +2,5 @@
 ^/analysis/*.html
 .drake
 .drake/*
+.DS_Store
+*.DS_Store
