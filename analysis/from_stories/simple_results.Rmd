@@ -1,0 +1,135 @@
+---
+title: "a trimmed-ish draft"
+output: github_document
+---
+
+```{r}
+knitr::opts_chunk$set(echo = FALSE)
+#knitr::opts_chunk$set(fig.dim = c(5,3))
+
+library(dplyr)
+library(gratia)
+library(ggplot2)
+load_mgcv()
+
+ts <- read.csv(here::here("analysis", "from_stories", "results", "ts_w_rescaled_e_100bbs.csv"))
+```
+
+```{r}
+
+both_change <- read.csv(here::here("analysis", "from_stories",  "results", "both_change_5_100bbs.csv"))
+
+all_draws <- both_change %>%
+  mutate(rat = end / start)
+
+both_summary <- read.csv(here::here("analysis", "from_stories",  "results", "both_summary_5_100bbs.csv"))
+
+```
+
+```{r}
+all_summary <- all_draws %>%
+  group_by(currency, identifier, k) %>%
+  summarize(
+    mean_rat = mean(rat),
+    lower_rat = quantile(rat, prob = .025),
+    upper_rat = quantile(rat, prob = .975)
+  ) %>%
+  ungroup() %>%
+  left_join(both_summary)
+
+ggplot(all_summary, aes(x = mean_rat)) +
+  geom_histogram(binwidth = .05) +
+  theme_bw() +
+  facet_wrap(vars(currency), scales = "free") +
+  geom_vline(xintercept = 1) +
+  geom_vline(xintercept = c(.5, 2), color = "red") +
+  scale_x_log10() +
+  xlab("mean ratio, log") 
+
+
+all_summary <- all_summary %>%
+  group_by_all() %>%
+  mutate(over_zero = (((lower_rat - 1) * (upper_rat - 1)) < 0),
+         increasing = all((lower_rat > 1), upper_rat > 1),
+         decreasing = all((lower_rat < 1), upper_rat < 1),
+         doubling = all(lower_rat > 1, upper_rat > 1, mean_rat >= 2),
+         halving = all(lower_rat < 1, upper_rat < 1, mean_rat <= 0.5)) %>%
+  ungroup()
+
+ggplot(filter(all_summary, !over_zero), aes(mean_rat))+
+  geom_histogram(binwidth = .05) +
+  theme_bw() +
+  facet_wrap(vars(currency), scales = "free") +
+  geom_vline(xintercept = 1) +
+  geom_vline(xintercept = c(.5, 2), color = "red") +
+  scale_x_log10() +
+  xlab("mean ratio, log") 
+
+all_summary %>%
+  group_by(currency) %>%
+  summarize(ntotal = dplyr::n(),
+            noverzero = sum(over_zero),
+            nincreasing = sum(increasing),
+            ndecreasing = sum(decreasing),
+            ndouble = sum(doubling),
+            nhalf = sum(halving))
+
+
+```
+
+```{r}
+all_summary_wide <- all_summary %>%
+  tidyr::pivot_wider(id_cols = c(identifier, k), names_from = currency, values_from = c(mean_rat, lower_rat, upper_rat))
+
+```
+
+```{r}
+
+all_summary_wide <- all_summary_wide %>%
+  group_by_all() %>%
+  mutate(e_n_compare = ifelse(
+    ((lower_rat_abundance < lower_rat_scaled_energy) &&
+       (upper_rat_abundance < lower_rat_scaled_energy)),
+    "abund_lower",
+    ifelse(
+      ((lower_rat_abundance > upper_rat_scaled_energy) &&
+         (upper_rat_abundance > upper_rat_scaled_energy)),
+      "abund_higher",
+      "overlap"
+    )
+  )
+  )
+  
+ggplot(all_summary_wide, aes(x = mean_rat_abundance, y = mean_rat_scaled_energy, color = e_n_compare)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower_rat_scaled_energy,
+                    ymax = upper_rat_scaled_energy)) +
+  geom_errorbarh(aes(xmin = lower_rat_abundance,
+                     xmax = upper_rat_abundance)) +
+  theme_bw() +
+  geom_hline(yintercept = 1) +
+  geom_vline(xintercept = 1) + 
+  geom_abline(slope = 1, intercept = 0) +
+  theme(legend.position="none") +
+  scale_x_log10() +
+  scale_y_log10()
+
+all_summary_wide %>%
+  group_by(e_n_compare) %>%
+  summarize(count = dplyr::n())
+
+e_v_n_resid <- all_summary_wide %>%
+  mutate(ratio = mean_rat_abundance / mean_rat_scaled_energy)
+
+
+```
+
+```{r}
+
+ggplot(e_v_n_resid, aes(ratio)) +
+  geom_histogram(binwidth = .1) +
+  xlab("abundance over energy") +
+  geom_vline(xintercept = 1)
+
+
+```
