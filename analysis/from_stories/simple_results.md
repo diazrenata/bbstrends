@@ -35,21 +35,29 @@ ts <- read.csv(here::here("analysis", "from_stories", "results", "ts_w_rescaled_
 
     ## `summarise()` ungrouping output (override with `.groups` argument)
 
-    ## # A tibble: 2 x 7
-    ##   currency      ntotal noverzero nincreasing ndecreasing ndouble nhalf
-    ##   <chr>          <int>     <int>       <int>       <int>   <int> <int>
-    ## 1 abundance        100        13          36          51       8     8
-    ## 2 scaled_energy    100        10          45          45       6     4
+<div class="kable-table">
+
+| currency       | ntotal | noverzero | nincreasing | ndecreasing | ndouble | nhalf |
+| :------------- | -----: | --------: | ----------: | ----------: | ------: | ----: |
+| abundance      |    100 |        13 |          36 |          51 |       8 |     8 |
+| scaled\_energy |    100 |        10 |          45 |          45 |       6 |     4 |
+
+</div>
+
+![](simple_results_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->![](simple_results_files/figure-gfm/unnamed-chunk-3-4.png)<!-- -->
 
 ![](simple_results_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
     ## `summarise()` ungrouping output (override with `.groups` argument)
 
-    ## # A tibble: 3 x 2
-    ##   e_n_compare  count
-    ##   <chr>        <int>
-    ## 1 abund_higher    12
-    ## 2 abund_lower     35
-    ## 3 overlap         53
+<div class="kable-table">
+
+| e\_n\_compare | count |
+| :------------ | ----: |
+| abund\_higher |    12 |
+| abund\_lower  |    35 |
+| overlap       |    53 |
+
+</div>
 
 ![](simple_results_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->

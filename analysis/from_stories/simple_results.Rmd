@@ -1,6 +1,8 @@
 ---
 title: "a trimmed-ish draft"
-output: github_document
+output: 
+    github_document:
+       df_print: kable
 ---
 
 ```{r}
@@ -43,7 +45,7 @@ ggplot(all_summary, aes(x = mean_rat)) +
   facet_wrap(vars(currency), scales = "free", ncol= 1) +
   geom_vline(xintercept = 1) +
   geom_vline(xintercept = c(.5, 2), color = "red") +
-  scale_x_log10() +
+  scale_x_log10(n.breaks = 20) +
   xlab("mean ratio, log") 
 
 
@@ -62,7 +64,7 @@ ggplot(filter(all_summary, !over_zero), aes(mean_rat))+
   facet_wrap(vars(currency), scales = "free", ncol = 1) +
   geom_vline(xintercept = 1) +
   geom_vline(xintercept = c(.5, 2), color = "red") +
-  scale_x_log10() +
+  scale_x_log10(n.breaks = 20) +
   xlab("mean ratio, log") 
 
 all_summary %>%
@@ -74,7 +76,22 @@ all_summary %>%
             ndouble = sum(doubling),
             nhalf = sum(halving))
 
+ggplot(all_summary, aes(x = mean_rat)) +
+  geom_density() +
+  theme_bw() +
+  facet_wrap(vars(currency), scales = "free", ncol= 1) +
+  geom_vline(xintercept = 1) +
+  geom_vline(xintercept = c(.5, 2), color = "red") +
+  scale_x_log10(n.breaks = 20) +
+  xlab("mean ratio, log") 
 
+ggplot(filter(all_summary, !over_zero), aes(mean_rat))+  geom_density() +
+  theme_bw() +
+  facet_wrap(vars(currency), scales = "free", ncol= 1) +
+  geom_vline(xintercept = 1) +
+  geom_vline(xintercept = c(.5, 2), color = "red") +
+  scale_x_log10(n.breaks = 20) +
+  xlab("mean ratio, log") 
 ```
 
 ```{r}
