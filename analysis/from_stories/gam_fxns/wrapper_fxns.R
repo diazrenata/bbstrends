@@ -1,9 +1,9 @@
-source(here::here("gams", "gam_fxns", "fd_fxns.R"))
+source(here::here("analysis", "from_stories",  "gam_fxns", "fd_fxns.R"))
 
 # Given a TS, fit a Poisson GAM with k = 5
 # Extract the derivatives
 
-mod_wrapper <- function(ts, response_variable = c("abundance", "energy", "biomass", "mean_e", "scaled_energy"), identifier = c("species", "site_name"), k = 3) {
+mod_wrapper <- function(ts, response_variable = c("abundance", "energy", "biomass", "mean_e", "scaled_energy", "mean_m"), identifier = c("species", "site_name"), k = 3) {
 
   response <- (match.arg(response_variable))
   ts_id <- match.arg(identifier)
@@ -12,11 +12,11 @@ mod_wrapper <- function(ts, response_variable = c("abundance", "energy", "biomas
     dplyr::rename(dependent = all_of(response),
                   identifier = all_of(ts_id))
 
-  if(response %in% c("energy", "scaled_energy", "biomass")) {
+  if(response %in% c("energy", "scaled_energy", "biomass", "mean_e", "mean_m")) {
     ts$dependent <- round(ts$dependent)
   }
 
-  if(response != "mean_e") {
+  if(TRUE) {
   ts_mod <- gam(dependent ~ s(year, k = k), data = ts, method = "REML", family = "poisson")
   } else {
     ts_mod <- gam(dependent ~ s(year, k = k), data = ts, method = "REML")

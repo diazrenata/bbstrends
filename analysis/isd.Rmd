@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = FALSE)
 library(bbstrends)
 library(dplyr)
 library(ggplot2)
+theme_set(theme_bw())
+source(here::here("analysis", "demo_fxns.R"))
 ```
 
 
@@ -19,8 +21,14 @@ The New Hartford route goes up and down Riverton Road and was started in 1994. I
 
 ```{r load route}
 
-ibd <- read.csv("~/Documents/GitHub/BBSsize/analysis/isd_data/isd_bbs_rtrg_102_18.csv") %>%
+ibd <- readRDS("~/Documents/GitHub/BBSsize/analysis/isd_data/ibd_isd_bbs_rtrg_102_18.Rds")
+
+#ibd <- read.csv("~/Documents/GitHub/BBSsize/analysis/isd_data/isd_bbs_rtrg_7_4.csv")
+
+ibd <- ibd %>%
+  mutate(ind_size = abs(ind_size)) %>%
   mutate(log_size = log(ind_size))
+
 ```
 
 Here are the species present in this route over the past 25 years:
@@ -40,95 +48,268 @@ ibd_species <- ibd %>%
 Here is how species richness, abundance, biomass, and energy have changed over those years:
 
 ```{r state variables}
+# 
+# sv <- ibd %>%
+#   group_by(year) %>%
+#   summarize(abundance = dplyr::n(),
+#             biomass = sum(ind_size),
+#             energy = sum(ind_b)) %>%
+#   ungroup() %>%
+#   mutate(         mean_energy = energy/abundance)
+# 
 
 sv <- ibd %>%
   group_by(year) %>%
-  summarize(richness = length(unique(id)),
-            abundance = dplyr::n(),
+  summarize(abundance = dplyr::n(),
             biomass = sum(ind_size)) %>%
   ungroup() %>%
-  mutate(         mean_mass = biomass/abundance)
+  mutate(         mean_size = biomass/abundance)
 
 
 sv_long <- sv %>%
   tidyr::pivot_longer(-year, names_to = "currency", values_to = "value")
 
-ggplot(filter(sv_long, !grepl("mean", currency)), aes(x = year, y = value, color = currency)) +
+ggplot(filter(sv_long), aes(x = year, y = value, color = currency)) +
   geom_point() +
   geom_line() +
   theme_bw() +
   scale_color_viridis_d(end = .8) +
   theme(legend.position = "none") +
-  facet_wrap(vars(currency), scales = "free_y")
+  facet_wrap(vars(currency), scales = "free_y", ncol = 1)
 
 ```
+
+## ISD 
+
+Using the logarithm of mass. 
+
+```{r isd}
+
+ggplot(ibd, aes(log_size)) +
+  geom_density()
+
+first5 <- unique(ibd$year)[1:5]
+last5 <- sort(unique(ibd$year), decreasing = T)[1:5]
+
+first5_isd <- ibd %>%
+  filter(year %in% first5) %>%
+  mutate(period = "first5")
+
+last5_isd <- ibd %>%
+  filter(year %in% last5) %>%
+  mutate(period = "last5")
+
+isds <- bind_rows(first5_isd, last5_isd)
+
+ggplot(isds, aes(log_size, color = year, group = year)) +
+  geom_density() +
+  facet_wrap(vars(period), scales = "free_y")
+
+min_size = 0
+max_size = max(isds$log_size) + .5
+npoints = 2000
+
+smooth_first5_isd <- data.frame(log_size = seq(min_size, max_size, length.out = npoints),
+                                period = "first5") %>%
+  mutate(density = make_kde(first5_isd$log_size, min_size ,max_size, npoints))
+
+
+smooth_last5_isd <- data.frame(log_size = seq(min_size, max_size, length.out = npoints),
+                                period = "last5") %>%
+  mutate(density = make_kde(last5_isd$log_size, min_size ,max_size, npoints))
+
+
+smooth_isds <- bind_rows(smooth_first5_isd, smooth_last5_isd)
+
+ggplot(smooth_isds, aes(log_size, density, color = period)) +
+  geom_line() 
+
+overlap <- pair_overlap(list(sp1=first5_isd$log_size, sp2=last5_isd$log_size), min_size, max_size, npoints)
+```
+
+The overlap for these is ```r overlap```.
+
+Resampling from the combined KDE:
 
 ```{r}
 
-ggplot(filter(ibd, year %in% c(1975, 2017)), aes(log_size)) +
-  geom_density() +
-  facet_wrap(vars(year)) +
-  theme_bw() 
+overall_isd <- data.frame(log_size = seq(min_size, max_size, length.out = npoints),
+                          density = make_kde(isds$log_size, min_size ,max_size, npoints))
 
-```
+sum(overall_isd$density)
 
-```{r compare ur isd methods}
+ggplot(overall_isd, aes(log_size, density)) +
+  geom_line()
+# 
+simulated_first5 = replicate(100, expr = sample(overall_isd$log_size, size = nrow(first5_isd), prob = overall_isd$density, replace = T))
 
-all_individuals_isd <- density(log(ibd$ind_size), from = 0, to = 1.2 * max(log(ibd$ind_size)), n = 8192)
+simulated_last5 = replicate(100, expr = sample(overall_isd$log_size, size = nrow(last5_isd), prob = overall_isd$density, replace = T))
+# # 
+# simulated_first5 = replicate(100, expr = sample(c(last5_isd$log_size, first5_isd$log_size), size = nrow(first5_isd), replace = T))
+# 
+# simulated_last5 = replicate(100, expr = sample(c(last5_isd$log_size, first5_isd$log_size), size = nrow(last5_isd), replace = T))
 
-all_individuals_isd <- data.frame(
-  size = all_individuals_isd$x,
-  density = all_individuals_isd$y / sum(all_individuals_isd$y)
-)
 
-make_year_isd <- function(thisyear, ibd) {
-  this_ibd <- filter(ibd, year == thisyear)
-  this_isd <- density(log(this_ibd$ind_size), from = 0, to = 1.2 * max(log(ibd$ind_size)), n = 8192)
+simulated_overlaps <- vector()
+
+for(i in 1:100) {
   
-  return(data.frame(x =this_isd$x,
-                    y = this_isd$y / sum(this_isd$y),
-                    year = thisyear))
+  simulated_overlaps[i] <- pair_overlap(list(sp1=simulated_first5[,i], sp2=simulated_last5[,i]), min_size, max_size, npoints)
+  
 }
 
+simulated_kdes <- bind_rows(
+  mutate(as.data.frame(apply(simulated_first5, MARGIN =2, FUN = make_kde, min_size = min_size, max_size = max_size, npoints = npoints)), period = "first5", log_size = seq(min_size, max_size, length.out = npoints)),
+  mutate(as.data.frame(apply(simulated_last5, MARGIN =2, FUN = make_kde, min_size = min_size, max_size = max_size, npoints = npoints)), period = "last5",log_size = seq(min_size, max_size, length.out = npoints)))
+simulated_kdes <- simulated_kdes %>%
+  tidyr::pivot_longer(1:100, names_to = "sim", values_to = "density") %>%
+  mutate(period_sim = paste0(period, sim))
 
-year_isds <- lapply(unique(ibd$year), FUN = make_year_isd, ibd = ibd)
+ggplot(filter(simulated_kdes, sim %in% unique(simulated_kdes$sim)[1:10]), aes(log_size, density, color = period, group = period_sim)) + 
+  geom_line(alpha = .5) +
+  scale_color_viridis_d(end = .8) +
+  geom_line(data = smooth_isds, aes(log_size, density, group= period, linetype = period), inherit.aes = F)
 
 
-year_isds <- bind_rows(year_isds)
+overlaps <- data.frame(source = c(rep("sim", times = 100), "actual"),
+                       overlap = c(simulated_overlaps, overlap))
+ggplot(filter(overlaps, source == "sim"), aes(overlap)) +
+  geom_density() +
+  geom_vline(xintercept = filter(overlaps, source == "actual")$overlap, color = "red")
 
-mean_year_isds <- year_isds %>%
-  group_by(x) %>%
-  summarize(mean_density = mean(y)) %>%
-  ungroup() %>%
-  rename(size = x)
+```
+### State variable change first-last
 
-gridExtra::grid.arrange(
-  grobs = list(ggplot(mean_year_isds, aes(size, mean_density)) + 
-  geom_line() +
-  theme_bw() +
-  ggtitle("Mean of annual ISDs"),
-  
-ggplot(all_individuals_isd, aes(size, density)) +
-  geom_line() +
-  theme_bw() +
-  ggtitle("All individuals")
-), nrow = 1)
+```{r}
 
-ggplot(all_individuals_isd, aes(size, density)) +
-  geom_line() +
-  geom_line(data = mean_year_isds, aes(size, mean_density), color = "blue") +
-  theme_bw() +
-  ggtitle("Both at once for scale")
+sv_periods <- data.frame(first5 = first5,
+                         last5 = last5) %>%
+  tidyr::pivot_longer(everything(), names_to = "period", values_to = "year")
+
+sv_ends_long <- filter(sv_long, year %in% sv_periods$year) %>%
+  right_join(sv_periods) 
+sv_ends <- filter(sv, year %in% sv_periods$year) %>%
+  right_join(sv_periods) %>%
+  mutate(period = as.factor(period))
+
+
+wilcox.test(abundance ~ period, data = sv_ends)
+wilcox.test(biomass ~ period, data = sv_ends)
+wilcox.test(mean_size ~ period, data = sv_ends)
+
+
+t.test(abundance ~ period, data = sv_ends)
+t.test(biomass ~ period, data = sv_ends)
+t.test(mean_size ~ period, data = sv_ends)
+
+ggplot(filter(sv_ends_long), aes(period, value, color = currency)) +
+  geom_boxplot() +
+  geom_point() +
+  facet_wrap(vars(currency), scales = "free", ncol = 4)
+
+
+
+ggplot(filter(sv_ends_long, currency == "mean_size"), aes(period, value, color = currency)) +
+  geom_boxplot() +
+  geom_point() +
+  facet_wrap(vars(currency), scales = "free", ncol = 4)
 ```
 
-The plots above are both constructed based on KDEs. There are assumptions and artefacts in there I'm not quite 100% on: the weighting of samples from different time steps. I also have a well-worn mental module that likes to construct ISDs via kdes or GMMs and then get started comparing them via overlap, etc. I'd like to explore something a little different at the moment, so I'm going to actually put a pin in things derived from KDEs and work instead off of pools of individuals. 
 
-```{r unaltered individuals}
+### State variable change GAMs
 
-ggplot(ibd, aes(x = log(ind_size), y = ..ncount..)) +
-  geom_histogram(bins = 100) +
-  geom_density(aes(x = log(ind_size), y = ..ndensity..)) +
-  theme_bw()
+```{r}
 
 
+library(dplyr)
+library(gratia)
+library(ggplot2)
+load_mgcv()
+
+ts <- read.csv(here::here("analysis", "from_stories", "working_datasets.csv"))
+
+unique_sites <- unique(ts$site_name)
+
+site_dfs <- lapply(unique_sites, FUN = function(site, full_ts) return(filter(full_ts, site_name == site)), full_ts = ts)
+
+source(here::here("analysis", "from_stories", "gam_fxns", "wrapper_fxns.R"))
+source(here::here("analysis", "from_stories", "gam_fxns", "sunrise_fxns.R"))
+
+```
+
+```{r just e portal, echo = F}
+
+rats <- filter(ts, site_name == "hartland")
+
+#portal_mean_perc_e <- sum(rats$energy) / sum(rats$abundance)
+# 
+# rats <- rats %>% 
+#   mutate(scaled_energy = energy / portal_mean_perc_e,
+#          mean_e = energy / abundance)
+
+rats <- rats %>% 
+  mutate(mean_m = biomass / abundance)
+
+rats_long <- rats %>%
+  select(year, biomass, abundance, mean_m) %>%
+  tidyr::pivot_longer(-year, names_to = "currency", values_to = "value")
+
+ggplot(filter(rats_long), aes(year, value, color = currency)) +
+  geom_line() +
+  theme_bw() +
+  scale_color_viridis_d() +
+  facet_wrap(vars(currency), ncol = 1, scales = "free")
+
+```
+
+
+```{r}
+e_mod <- mod_wrapper(rats, response_variable = "biomass", identifier = "site_name", k = 5)
+n_mod <- mod_wrapper(rats, response_variable = "abundance", identifier = "site_name", k = 5)
+meane_mod <-  mod_wrapper(rats, response_variable = "mean_m", identifier = "site_name", k = 5)
+
+e_samples <- samples_wrapper(e_mod, seed_seed = 1994)
+n_samples <- samples_wrapper(n_mod, seed_seed = 1990)
+meane_samples <- samples_wrapper(meane_mod, seed_seed = 1977)
+
+joint_samples <- bind_rows(e_samples, n_samples, meane_samples) %>%
+  select(year, currency, mean, upper, lower) %>%
+  distinct()
+
+ggplot(joint_samples, aes(year, mean, color = currency, fill = currency)) +
+  geom_line(aes(year, mean)) +
+  geom_ribbon(aes(year, ymin = lower, ymax = upper),  alpha = .25) +
+  ggtitle("Fits for energy and abundance") +
+  theme_bw() +
+  scale_color_viridis_d() +
+  scale_fill_viridis_d() +
+  facet_wrap(vars(currency), scales = "free", ncol = 1)
+
+```
+
+
+Calculated off the samples, we can get:
+
+* the net change from beginning to end, plus a CI
+* a timeseries of the instantaneous rate of change, which we can summarize in order to get a sense of how much backtracking is occurring over the course of the timeseries
+
+## Net change
+
+```{r shortcut to net change}
+
+
+e_change <- net_change_wrapper(e_samples)
+n_change <- net_change_wrapper(n_samples)
+meane_change <- net_change_wrapper(meane_samples)
+
+both_change <- bind_rows(e_change, n_change, meane_change)
+
+ggplot(both_change, aes(currency, net_proportional, color = currency)) +
+  geom_boxplot() +
+  theme_bw() +
+  scale_color_viridis_d()
+
+both_summary <- change_summary_wrapper(both_change)
+
+both_summary
 ```
