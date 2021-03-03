@@ -1,0 +1,333 @@
+---
+title: "BBS route that goes by Hartland"
+output: 
+    github_document:
+       df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(bbstrends)
+library(dplyr)
+library(ggplot2)
+theme_set(theme_bw())
+source(here::here("analysis", "demo_fxns.R"))
+```
+
+
+### Load specific route
+
+The New Hartford route goes up and down Riverton Road and was started in 1994. It feels pretty auspicious. It is route 102, region 18.
+
+```{r load route}
+
+ibd <- readRDS("~/Documents/GitHub/BBSsize/analysis/isd_data/ibd_isd_bbs_rtrg_102_18.Rds")
+
+#ibd <- read.csv("~/Documents/GitHub/BBSsize/analysis/isd_data/isd_bbs_rtrg_7_4.csv")
+
+ibd <- ibd %>%
+  mutate(ind_size = abs(ind_size)) %>%
+  mutate(log_size = log(ind_size))
+
+```
+
+Here is how species richness, abundance, biomass, and energy have changed over those years:
+
+```{r state variables}
+# 
+# sv <- ibd %>%
+#   group_by(year) %>%
+#   summarize(abundance = dplyr::n(),
+#             biomass = sum(ind_size),
+#             energy = sum(ind_b)) %>%
+#   ungroup() %>%
+#   mutate(         mean_energy = energy/abundance)
+# 
+
+sv <- ibd %>%
+  group_by(year) %>%
+  summarize(abundance = dplyr::n(),
+            energy = sum(ind_b),
+            biomass = sum(ind_size)) %>%
+  ungroup() %>%
+  mutate(mean_energy = energy / abundance,
+         mean_size = biomass/abundance)
+
+
+sv_long <- sv %>%
+  tidyr::pivot_longer(-year, names_to = "currency", values_to = "value")
+
+ggplot(filter(sv_long), aes(x = year, y = value, color = currency)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  theme(legend.position = "none") +
+  facet_wrap(vars(currency), scales = "free_y", ncol = 1)
+
+```
+
+## ISD 
+
+Using the logarithm of mass. 
+
+```{r isd}
+
+ggplot(ibd, aes(log_size, group = year)) +
+  geom_density(alpha = .1)
+
+years <- as.list(unique(ibd$year))
+min_size <- 1 * min(ibd$log_size)
+max_size <- 1 * max(ibd$log_size)
+npoints <- 500
+
+annual_isds <- lapply(years, FUN = function(thisyear, ibd) return(filter(ibd, year == thisyear)), ibd = ibd)
+
+annual_isd_smooths <- lapply(annual_isds, FUN = function(isd, min_size, max_size, npoints) return(data.frame(year = isd$year[1],
+                                                                                log_size = seq(min_size, max_size, length.out = npoints),
+                                                                                density = make_kde(isd$log_size, min_size = min_size, max_size = max_size, n = npoints))), min_size = min_size, max_size = max_size, npoints = npoints)
+
+
+isd_smooths <- bind_rows(annual_isd_smooths) %>%
+  mutate(yearf = as.factor(year),
+         fiveyrs = ceiling((year - 1993.5) / 5)) %>%
+  mutate(fiveyrsf = as.factor(fiveyrs))
+
+ggplot(isd_smooths, aes(log_size, density, group = yearf, color = fiveyrsf)) +
+  geom_line()
+
+
+ggplot(filter(isd_smooths, fiveyrs %in% c(1, 5)), aes(log_size, density, group = yearf, color = fiveyrsf)) +
+  geom_line()
+```
+
+
+```{r}
+
+library(mgcv)
+library(gratia)
+source(here::here("R", "gams_fxns_generalized.R"))
+
+isd_gams_all <- gam(density ~ s(log_size, k = 50) + s(log_size, by = fiveyrsf, k = 20), data = isd_smooths, family = "tw")
+
+#isd_gams_all <- gam(density ~ s(log_size) + s(log_size, by = fiveyrs), data = isd_smooths, family = "tw")
+
+isd_fit <- isd_smooths %>% 
+  add_fitted(isd_gams_all, exclude= c("s(yearf)"))
+
+ggplot(isd_fit, aes(log_size, .value, color = fiveyrsf)) +
+  geom_line(linetype = 3) +
+  geom_line(aes(y = density, group= year), alpha = .5) +
+  facet_wrap(vars(fiveyrsf))
+
+
+ggplot(filter(isd_fit, fiveyrsf %in% c(1, 5)), aes(log_size, .value, color = fiveyrsf)) +
+  geom_line(linetype = 3)
+
+ggplot(filter(isd_fit, fiveyrsf %in% c(1, 5)), aes(log_size, .value, color = fiveyrsf)) +
+  geom_line(linetype = 3) +
+  geom_line(aes(y = density, group= year), alpha = .5) +
+  facet_wrap(vars(fiveyrsf))
+
+isd_pdat <- make_pdat(isd_smooths, np = 2000, comparison_variable = "fiveyrsf")
+isd_pred <- get_predicted_vals(isd_gams_all, isd_pdat, exclude= c("s(yearf)"))
+plot_fitted_pred(isd_pred, "fiveyrsf")
+plot_fitted_pred(filter(isd_pred, fiveyrsf %in% c(1, 5)), "fiveyrsf")
+
+isd_diff <- get_exclosure_diff(isd_gams_all, isd_pdat, "fiveyrsf", 1, 5, exclude = c("s(yearf)"))
+plot_exclosure_diff(isd_diff)
+
+```
+
+Reshuffling years...
+
+```{r}
+
+year_change <- data.frame(year = unlist(years),
+                          newyear = sample(unlist((years)), size = length(years), replace = F))
+
+isd_smooths_rs <- bind_rows(annual_isd_smooths) %>%
+  left_join(year_change) %>%
+  select(-year) %>%
+  rename(year = newyear) %>%
+  mutate(yearf = as.factor(year),
+         fiveyrs = ceiling((year - 1993.5) / 5)) %>%
+  mutate(fiveyrsf = as.factor(fiveyrs))
+
+ggplot(isd_smooths_rs, aes(log_size, density, group = yearf, color = fiveyrsf)) +
+  geom_line()
+
+
+ggplot(filter(isd_smooths_rs, fiveyrs %in% c(1, 5)), aes(log_size, density, group = yearf, color = fiveyrsf)) +
+  geom_line()
+
+```
+
+```{r}
+
+isd_rs_gams_all <- gam(density ~ s(log_size, k = 50) + s(log_size, by = fiveyrsf, k = 20), data = isd_smooths_rs, family = "tw")
+
+#isd_rs_gams_all <- gam(density ~ s(log_size) + s(log_size, by = fiveyrs), data = isd_smooths_rs, family = "tw")
+
+isd_rs_fit <- isd_smooths_rs %>% 
+  add_fitted(isd_rs_gams_all, exclude= c("s(yearf)"))
+
+ggplot(isd_rs_fit, aes(log_size, .value, color = fiveyrsf)) +
+  geom_line(linetype = 3) +
+  geom_line(aes(y = density, group= year), alpha = .5) +
+  facet_wrap(vars(fiveyrsf))
+
+
+ggplot(filter(isd_rs_fit, fiveyrsf %in% c(1, 5)), aes(log_size, .value, color = fiveyrsf)) +
+  geom_line(linetype = 3)
+
+ggplot(filter(isd_rs_fit, fiveyrsf %in% c(1, 5)), aes(log_size, .value, color = fiveyrsf)) +
+  geom_line(linetype = 3) +
+  geom_line(aes(y = density, group= year), alpha = .5) +
+  facet_wrap(vars(fiveyrsf))
+
+isd_rs_pdat <- make_pdat(isd_smooths_rs, np = 2000, comparison_variable = "fiveyrsf")
+isd_rs_pred <- get_predicted_vals(isd_rs_gams_all, isd_rs_pdat, exclude= c("s(yearf)"))
+plot_fitted_pred(isd_rs_pred, "fiveyrsf")
+plot_fitted_pred(filter(isd_rs_pred, fiveyrsf %in% c(1, 5)), "fiveyrsf")
+
+isd_rs_diff <- get_exclosure_diff(isd_rs_gams_all, isd_rs_pdat, "fiveyrsf", 1, 5, exclude = c("s(yearf)"))
+plot_exclosure_diff(isd_rs_diff)
+
+```
+
+<!-- ### State variable change first-last -->
+
+<!-- ```{r} -->
+
+<!-- sv_periods <- data.frame(first5 = first5, -->
+<!--                          last5 = last5) %>% -->
+<!--   tidyr::pivot_longer(everything(), names_to = "period", values_to = "year") -->
+
+<!-- sv_ends_long <- filter(sv_long, year %in% sv_periods$year) %>% -->
+<!--   right_join(sv_periods)  -->
+<!-- sv_ends <- filter(sv, year %in% sv_periods$year) %>% -->
+<!--   right_join(sv_periods) %>% -->
+<!--   mutate(period = as.factor(period)) -->
+
+
+<!-- wilcox.test(abundance ~ period, data = sv_ends) -->
+<!-- wilcox.test(biomass ~ period, data = sv_ends) -->
+<!-- wilcox.test(mean_size ~ period, data = sv_ends) -->
+
+
+<!-- t.test(abundance ~ period, data = sv_ends) -->
+<!-- t.test(biomass ~ period, data = sv_ends) -->
+<!-- t.test(mean_size ~ period, data = sv_ends) -->
+
+<!-- ggplot(filter(sv_ends_long), aes(period, value, color = currency)) + -->
+<!--   geom_boxplot() + -->
+<!--   geom_point() + -->
+<!--   facet_wrap(vars(currency), scales = "free", ncol = 4) -->
+
+
+
+<!-- ggplot(filter(sv_ends_long, currency == "mean_size"), aes(period, value, color = currency)) + -->
+<!--   geom_boxplot() + -->
+<!--   geom_point() + -->
+<!--   facet_wrap(vars(currency), scales = "free", ncol = 4) -->
+<!-- ``` -->
+
+
+<!-- ### State variable change GAMs -->
+
+<!-- ```{r} -->
+
+
+<!-- library(dplyr) -->
+<!-- library(gratia) -->
+<!-- library(ggplot2) -->
+<!-- load_mgcv() -->
+
+<!-- ts <- read.csv(here::here("analysis", "from_stories", "working_datasets.csv")) -->
+
+<!-- unique_sites <- unique(ts$site_name) -->
+
+<!-- site_dfs <- lapply(unique_sites, FUN = function(site, full_ts) return(filter(full_ts, site_name == site)), full_ts = ts) -->
+
+<!-- source(here::here("analysis", "from_stories", "gam_fxns", "wrapper_fxns.R")) -->
+<!-- source(here::here("analysis", "from_stories", "gam_fxns", "sunrise_fxns.R")) -->
+
+<!-- ``` -->
+
+<!-- ```{r just e portal, echo = F} -->
+
+<!-- rats <- filter(ts, site_name == "hartland") -->
+
+<!-- #portal_mean_perc_e <- sum(rats$energy) / sum(rats$abundance) -->
+<!-- #  -->
+<!-- # rats <- rats %>%  -->
+<!-- #   mutate(scaled_energy = energy / portal_mean_perc_e, -->
+<!-- #          mean_e = energy / abundance) -->
+
+<!-- rats <- rats %>%  -->
+<!--   mutate(mean_m = biomass / abundance) -->
+
+<!-- rats_long <- rats %>% -->
+<!--   select(year, biomass, abundance, mean_m) %>% -->
+<!--   tidyr::pivot_longer(-year, names_to = "currency", values_to = "value") -->
+
+<!-- ggplot(filter(rats_long), aes(year, value, color = currency)) + -->
+<!--   geom_line() + -->
+<!--   theme_bw() + -->
+<!--   scale_color_viridis_d() + -->
+<!--   facet_wrap(vars(currency), ncol = 1, scales = "free") -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- e_mod <- mod_wrapper(rats, response_variable = "biomass", identifier = "site_name", k = 5) -->
+<!-- n_mod <- mod_wrapper(rats, response_variable = "abundance", identifier = "site_name", k = 5) -->
+<!-- meane_mod <-  mod_wrapper(rats, response_variable = "mean_m", identifier = "site_name", k = 5) -->
+
+<!-- e_samples <- samples_wrapper(e_mod, seed_seed = 1994) -->
+<!-- n_samples <- samples_wrapper(n_mod, seed_seed = 1990) -->
+<!-- meane_samples <- samples_wrapper(meane_mod, seed_seed = 1977) -->
+
+<!-- joint_samples <- bind_rows(e_samples, n_samples, meane_samples) %>% -->
+<!--   select(year, currency, mean, upper, lower) %>% -->
+<!--   distinct() -->
+
+<!-- ggplot(joint_samples, aes(year, mean, color = currency, fill = currency)) + -->
+<!--   geom_line(aes(year, mean)) + -->
+<!--   geom_ribbon(aes(year, ymin = lower, ymax = upper),  alpha = .25) + -->
+<!--   ggtitle("Fits for energy and abundance") + -->
+<!--   theme_bw() + -->
+<!--   scale_color_viridis_d() + -->
+<!--   scale_fill_viridis_d() + -->
+<!--   facet_wrap(vars(currency), scales = "free", ncol = 1) -->
+
+<!-- ``` -->
+
+
+<!-- Calculated off the samples, we can get: -->
+
+<!-- * the net change from beginning to end, plus a CI -->
+<!-- * a timeseries of the instantaneous rate of change, which we can summarize in order to get a sense of how much backtracking is occurring over the course of the timeseries -->
+
+<!-- ## Net change -->
+
+<!-- ```{r shortcut to net change} -->
+
+
+<!-- e_change <- net_change_wrapper(e_samples) -->
+<!-- n_change <- net_change_wrapper(n_samples) -->
+<!-- meane_change <- net_change_wrapper(meane_samples) -->
+
+<!-- both_change <- bind_rows(e_change, n_change, meane_change) -->
+
+<!-- ggplot(both_change, aes(currency, net_proportional, color = currency)) + -->
+<!--   geom_boxplot() + -->
+<!--   theme_bw() + -->
+<!--   scale_color_viridis_d() -->
+
+<!-- both_summary <- change_summary_wrapper(both_change) -->
+
+<!-- both_summary -->
+<!-- ``` -->
