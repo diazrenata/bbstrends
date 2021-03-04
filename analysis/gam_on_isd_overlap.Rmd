@@ -1,0 +1,178 @@
+---
+title: "BBS route that goes by Hartland"
+output: 
+    github_document:
+       df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(bbstrends)
+library(dplyr)
+library(ggplot2)
+theme_set(theme_bw())
+source(here::here("analysis", "demo_fxns.R"))
+```
+
+
+### Load specific route
+
+The New Hartford route goes up and down Riverton Road and was started in 1994. It feels pretty auspicious. It is route 102, region 18.
+
+```{r load route}
+
+ibd <- readRDS("~/Documents/GitHub/BBSsize/analysis/isd_data/ibd_isd_bbs_rtrg_19_35.Rds")
+
+#ibd <- read.csv("~/Documents/GitHub/BBSsize/analysis/isd_data/isd_bbs_rtrg_7_4.csv")
+
+ibd <- ibd %>%
+  mutate(ind_size = abs(ind_size)) %>%
+  mutate(log_size = log(ind_size))
+
+```
+
+## ISD 
+
+Using the logarithm of mass. 
+
+```{r isd}
+
+ggplot(ibd, aes(log_size, group = year)) +
+  geom_density(alpha = .1)
+
+years <- as.list(unique(ibd$year))
+min_size <- 1 * min(ibd$log_size)
+max_size <- 1 * max(ibd$log_size)
+npoints <- 500
+
+annual_isds <- lapply(years, FUN = function(thisyear, ibd) return(filter(ibd, year == thisyear)), ibd = ibd)
+
+annual_isd_smooths <- lapply(annual_isds, FUN = function(isd, min_size, max_size, npoints) return(data.frame(year = isd$year[1],
+                                                                                log_size = seq(min_size, max_size, length.out = npoints),
+                                                                                density = make_kde(isd$log_size, min_size = min_size, max_size = max_size, n = npoints))), min_size = min_size, max_size = max_size, npoints = npoints)
+
+
+isd_smooths <- bind_rows(annual_isd_smooths) %>%
+  mutate(yearf = as.factor(year),
+         fiveyrs = ceiling((year - 1993.5) / 5)) %>%
+  mutate(fiveyrsf = as.factor(fiveyrs))
+
+ggplot(isd_smooths, aes(log_size, density, group = yearf, color = fiveyrsf)) +
+  geom_line()
+
+
+ggplot(filter(isd_smooths, fiveyrs %in% c(1, 5)), aes(log_size, density, group = yearf, color = fiveyrsf)) +
+  geom_line()
+```
+
+
+```{r}
+
+library(mgcv)
+library(gratia)
+source(here::here("R", "gams_fxns_generalized.R"))
+
+isd_gams_all <- gam(density ~ s(log_size, k = 20) + s(log_size, by = fiveyrsf, k = 5), data = isd_smooths, family = "tw")
+
+#isd_gams_all <- gam(density ~ s(log_size) + s(log_size, by = fiveyrs), data = isd_smooths, family = "tw")
+
+isd_fit <- isd_smooths %>% 
+  add_fitted(isd_gams_all, exclude= c("s(yearf)"))
+
+ggplot(isd_fit, aes(log_size, .value, color = fiveyrsf)) +
+  geom_line(linetype = 3) +
+  geom_line(aes(y = density, group= year), alpha = .5) +
+  facet_wrap(vars(fiveyrsf))
+
+
+ggplot(filter(isd_fit, fiveyrsf %in% c(1, 5)), aes(log_size, .value, color = fiveyrsf)) +
+  geom_line(linetype = 3)
+
+ggplot(filter(isd_fit, fiveyrsf %in% c(1, 5)), aes(log_size, .value, color = fiveyrsf)) +
+  geom_line(linetype = 3) +
+  geom_line(aes(y = density, group= year), alpha = .5) +
+  facet_wrap(vars(fiveyrsf))
+
+isd_pdat <- make_pdat(isd_smooths, np = 2000, comparison_variable = "fiveyrsf")
+isd_pred <- get_predicted_vals(isd_gams_all, isd_pdat, exclude= c("s(yearf)"))
+plot_fitted_pred(isd_pred, "fiveyrsf")
+plot_fitted_pred(filter(isd_pred, fiveyrsf %in% c(1, 5)), "fiveyrsf")
+
+isd_diff <- get_exclosure_diff(isd_gams_all, isd_pdat, "fiveyrsf", 1,5, exclude = c("s(yearf)"))
+plot_exclosure_diff(isd_diff)
+
+```
+
+Questions: 
+
+1. There's a _significant_ difference but what is the magnitude of it? 
+
+```{r}
+isd_pdat <- make_pdat(isd_smooths, np = 500, comparison_variable = "fiveyrsf")
+
+s_pdat <- filter(isd_pdat, fiveyrsf %in% c(1,5)) %>%
+  mutate(row = dplyr::row_number())
+
+isd_samples <- gratia::predicted_samples(isd_gams_all, 10, n = 10, newdata = s_pdat, scale = "response") %>%
+  left_join(s_pdat)
+
+isd_samples <- mutate(isd_samples, draw = as.factor(draw))
+
+ggplot(isd_samples, aes(log_size, response, color = fiveyrsf, group = (draw))) +
+  geom_line() +
+  facet_wrap(vars(fiveyrsf))
+
+
+isd_samples <- isd_samples %>%
+  group_by(draw, fiveyrsf) %>%
+  mutate(total_density = sum(response)) %>%
+  mutate(scaled_density = response / total_density) %>%
+  ungroup()
+
+ggplot(isd_samples, aes(log_size, scaled_density, color = fiveyrsf, group = (draw))) +
+  geom_line() +
+  facet_wrap(vars(fiveyrsf))
+
+isd_samples_wide <- isd_samples %>%
+  select(log_size, fiveyrsf, draw, scaled_density) %>%
+  tidyr::pivot_wider(id_cols = c(log_size, draw), names_from = fiveyrsf,values_from = scaled_density)  %>%
+  rename(first = `1`,
+         last = `5`)
+
+
+ggplot(isd_samples_wide, aes(log_size, last - first, group = (draw))) +
+  geom_line() 
+
+isd_samples_wide %>%
+  group_by(draw, log_size) %>%
+  mutate(min_density = min(first, last)) %>%
+  ungroup() %>%
+  group_by(draw) %>%
+  summarize(overlap = sum(min_density))
+
+
+pred_overlap <- isd_pred %>%
+  filter(fiveyrsf %in% c(1, 5)) %>%
+  select(log_size, fiveyrsf, invlink_fit) %>%
+  group_by(fiveyrsf) %>%
+    mutate(total_density = sum(invlink_fit)) %>%
+  mutate(scaled_density = invlink_fit / total_density) %>%
+  ungroup() %>%
+  select(log_size, fiveyrsf, scaled_density) %>%
+  tidyr::pivot_wider(id_cols = c(log_size), names_from = fiveyrsf,values_from = scaled_density)  %>%
+  rename(first = `1`,
+         last = `5`)
+
+
+ggplot(pred_overlap, aes(log_size, last - first)) +
+  geom_line() 
+
+pred_overlap %>%
+  group_by( log_size) %>%
+  mutate(min_density = min(first, last)) %>%
+  ungroup() %>%
+  summarize(overlap = sum(min_density))
+
+
+
+```
